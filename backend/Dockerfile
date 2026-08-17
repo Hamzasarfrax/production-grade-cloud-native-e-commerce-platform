@@ -1,27 +1,61 @@
-# API microservice — Laravel 13 + MySQL
-# Build: docker compose build api
-FROM php:8.3-cli
+# the base image debian based
+FROM php:8.4-fpm-bookworm
 
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends git unzip libzip-dev libpng-dev libonig-dev \
-    && docker-php-ext-install pdo_mysql zip gd \
+# PHP extensions amd  OS packages
+
+RUN apt-get update && apt-get install -y \
+    git \
+    curl \
+    unzip \
+    libpng-dev \
+    libonig-dev \
+    libxml2-dev \
     && rm -rf /var/lib/apt/lists/*
+
+# things that need laravel to run apllictaions
+
+RUN docker-php-ext-install \
+    pdo_mysql \
+    mbstring \
+    exif \
+    pcntl \
+    bcmath \
+    gd
+
+# Composer install karne ke bajaye Composer ki official image se executable utha rahe hain
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www
+# create user
+RUN useradd -m -u 1000 backend-app-user
 
-COPY . .
+# make directory to copy the curent-context-host
+WORKDIR /backend-app
 
-RUN composer install --no-interaction --prefer-dist --no-scripts \
-    && composer dump-autoload --optimize
+# copy data
 
-RUN cp .env.example .env \
-    && php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');" \
-    && php artisan key:generate
+COPY . /backend-app/
 
-RUN chmod -R 777 storage bootstrap/cache
+# install the dependencies
 
-EXPOSE 8000
+RUN composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction
 
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+# recursively changes the ownership of Laravel's writable directories to the www-data user and group
+
+RUN chown -R backend-app-user:backend-app-user \
+    storage \
+    bootstrap/cache
+
+# conatiner kay sary process through  backend-app-user chaly gay ab
+USER backend-app-user
+
+# PHP-FPM commonly FastCGI ke liye port 9000 use karta hai.
+
+EXPOSE 9000
+
+# after conatiner start/run it will run
+
+CMD ["php-fpm"]
