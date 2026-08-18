@@ -1,6 +1,7 @@
 vendor
 node_modules
 .env
+.env.*
 storage/*.key
 storage/logs/*
 storage/framework/cache/*
@@ -12,3 +13,5 @@ storage/framework/testing/*
 database/database.sqlite
 tests
 .idea
+docker-compose.yml
+README.md

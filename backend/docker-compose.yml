@@ -1,0 +1,138 @@
+services:
+
+  # Laravel application running on PHP-FPM
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+
+    container_name: backend-app
+
+    restart: unless-stopped
+
+    # Expose PHP-FPM internally on port 9000
+    expose:
+      - "9000"
+
+    # Load Laravel environment variables
+    env_file:
+      - .env
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+    networks:
+      - laravel-network
+
+
+  # Nginx web server
+  nginx:
+    image: nginx:alpine
+
+    container_name: laravel-nginx
+
+    restart: unless-stopped
+
+    ports:
+      - "8080:80"
+
+    volumes:
+      # Mount Laravel public directory
+      - ./:/backend-app:ro
+
+      # Mount custom Nginx configuration
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+
+    depends_on:
+      - app
+
+    networks:
+      - laravel-network
+
+
+  # MySQL database
+  mysql:
+    image: mysql:8.4
+
+    container_name: laravel-mysql
+
+    restart: unless-stopped
+
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+
+    ports:
+      # Host:Container
+      - "3306:3306"
+
+    volumes:
+      # Persist MySQL data even if the container is recreated
+      - mysql-data:/var/lib/mysql
+
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "mysqladmin",
+          "ping",
+          "-h",
+          "localhost",
+          "-u",
+          "root",
+          "-p${DB_ROOT_PASSWORD}"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - laravel-network
+
+
+  # Redis for caching, sessions and queues
+  redis:
+    image: redis:7-alpine
+
+    container_name: laravel-redis
+
+    restart: unless-stopped
+
+    ports:
+      # Host:Container
+      - "6379:6379"
+
+    volumes:
+      # Persist Redis data
+      - redis-data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - laravel-network
+
+
+# Persistent Docker volumes
+volumes:
+
+  # MySQL database storage
+  mysql-data:
+
+  # Redis storage
+  redis-data:
+
+
+# Shared network for all Laravel services
+networks:
+
+  laravel-network:
+    driver: bridge
