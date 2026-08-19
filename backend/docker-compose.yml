@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-
+    image: backend-app:1.0.0
     container_name: backend-app
 
     restart: unless-stopped
