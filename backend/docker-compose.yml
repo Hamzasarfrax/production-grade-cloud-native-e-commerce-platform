@@ -21,18 +21,16 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_healthy
 
     networks:
-      - laravel-network
+      - backend-app-network
 
 
   # Nginx web server
   nginx:
     image: nginx:alpine
 
-    container_name: laravel-nginx
+    container_name: backend-app-nginx
 
     restart: unless-stopped
 
@@ -50,14 +48,14 @@ services:
       - app
 
     networks:
-      - laravel-network
+      - backend-app-network
 
 
   # MySQL database
   mysql:
     image: mysql:8.4
 
-    container_name: laravel-mysql
+    container_name: backend-app-mysql
 
     restart: unless-stopped
 
@@ -92,33 +90,7 @@ services:
       retries: 5
 
     networks:
-      - laravel-network
-
-
-  # Redis for caching, sessions and queues
-  redis:
-    image: redis:7-alpine
-
-    container_name: laravel-redis
-
-    restart: unless-stopped
-
-    ports:
-      # Host:Container
-      - "6379:6379"
-
-    volumes:
-      # Persist Redis data
-      - redis-data:/data
-
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-    networks:
-      - laravel-network
+      - backend-app-network
 
 
 # Persistent Docker volumes
@@ -127,12 +99,8 @@ volumes:
   # MySQL database storage
   mysql-data:
 
-  # Redis storage
-  redis-data:
-
-
 # Shared network for all Laravel services
 networks:
 
-  laravel-network:
+  backend-app-network:
     driver: bridge
