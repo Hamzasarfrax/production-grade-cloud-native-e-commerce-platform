@@ -42,6 +42,11 @@
       DB name/user root `.env` me backend/.env se match (`cloud-native`), Dockerfile base
       php:8.3-cli->php:8.3-fpm CMD php-fpm, canonical path `/var/www/html` (WORKDIR = nginx
       root = compose mount). Migrate container me: `docker compose exec backend-app php artisan migrate --seed --force`.
+- [x] AUTO-SETUP (2026-08-21): `backend/docker/entrypoint.sh` — har start par DB wait +
+      `migrate --force` + seed SIRF empty DB par (products count check), phir php-fpm exec.
+      mysql healthcheck (`mysqladmin ping`) + backend `depends_on: condition: service_healthy`.
+      Naye user ke liye sirf `docker compose up -d --build` kafi hai — verified: fresh
+      volume par auto migrate+seed, restart par "skipping seed" (no duplicates).
 - [ ] README/docs architecture — done, rest (deployment/runbook/security) pending.
 - [ ] Auth (Laravel Sanctum) for protected admin + `/api` — pending.
 - [ ] K8s + ArgoCD manifests fill (folders exist, empty) — pending.

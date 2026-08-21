@@ -21,13 +21,14 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     container_name: ecommerce-backend-app
-    image: backend-app:1.0.0
+    image: backend-app:1.0.2
     expose:
       - "9000"
     env_file:
       - ./backend/.env
     depends_on:
-      - mysql
+      mysql:
+        condition: service_healthy
     networks:
       - app_newtwork
 
@@ -55,6 +56,13 @@ services:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
       - mysql_data:/var/lib/mysql
+    healthcheck:
+      # $$ = compose interpolation se escape (variable container ke andar evaluate ho)
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     networks:
       - app_newtwork
 

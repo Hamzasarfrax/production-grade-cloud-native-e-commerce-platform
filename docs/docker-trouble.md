@@ -128,6 +128,11 @@ FPM log: "GET /index.php" 404
 
 ## Fix Sequence (commands)
 
+> **Update:** Ab ye sab manual nahi karna padta — `backend/docker/entrypoint.sh`
+> (DB wait + migrate + conditional seed) aur mysql healthcheck ki wajah se sirf
+> `docker compose up -d --build` kafi hai. Neeche wale steps sirf emergency/manual
+> recovery ke liye hain.
+
 ```bash
 docker compose config --quiet          # syntax validate
 docker compose down -v --remove-orphans  # corrupt volume + purane containers remove
