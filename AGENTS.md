@@ -22,8 +22,14 @@
 - [x] `frontend/` — Full React e-commerce UI (Landing, Shop, Compare, Trade-in, Cart,
       Checkout, Contact, Admin Dashboard). Data abhi `src/data/mockData.ts` + localStorage
       se aata hai.
-- [x] `backend/` — Fresh Laravel 13 (Chisel + Fortify + Inertia) bundle install kiya hua hai.
+- [x] `backend/` — Pure JSON API (Laravel 13). Starter kit ka React/TSX/Inertia/Fortify/Chisel
+      frontend REMOVE ho chuka hai (resources/js, views, web routes, vite/npm tooling sab deleted).
+      Sirf `routes/api.php` + Api controllers + models + migrations + seeders hain.
 - [x] Backend API done: models, migrations, seeders, controllers, `routes/api.php`, CORS. MySQL `.env`.
+- [x] Backend Docker (backend/docker-compose.yml: FPM app + nginx :8080 + mysql) — live verified.
+      Nginx conf mount fix (`docker/nginx/default.conf`), models me explicit `$table` set
+      (CustomerInquiry->inquiries, PromoCode->promos). Stale bootstrap/cache issue bhi fix hua
+      (docs/troubleshooting.md dekho).
 - [x] Frontend <-> Backend API connection done (`src/api.ts`, App.tsx hydration, Vite proxy).
 - [x] Admin panel dynamic — API se data load + mutations (products/orders/inquiries + KPIs).
 - [x] docker-compose.yml done (mysql/api/web). Dockerfiles in `frontend/` + `backend/`.
@@ -44,9 +50,15 @@
   `apiMode`; connected hone par sab mutations API se hote hain.
 - Backend JSON keys camelCase hain — `toApi()` on models + `resolveProductAttributes()` in
   ProductController camelCase->snake_case map karta hai.
-- Note: Is WSL me PHP 8.3/MySQL/Docker install nahi hai (Windows `php.exe` 8.2 hai — Laravel
-  13 chalta nahi). Frontend typecheck + build verified `npm run lint` / `vite build`. Backend
-  PHP files syntax-lint passed (php -l). Actual run Docker/CI me hoga.
+- Note: Is WSL me PHP/MySQL install nahi hai, Docker hai. Windows `php.exe` 8.3.14 hai —
+  `php artisan serve` (Windows :8000) verified working. Frontend typecheck + build verified
+  `npm run lint` / `vite build`. Backend PHP files syntax-lint passed (php -l).
+- DB_HOST split (2026-08-21): `.env` me `DB_HOST=127.0.0.1` (local serve ke liye);
+  docker-compose.yml backend-app me `environment: DB_HOST=mysql` override hai. Dono stacks
+  ek sath chal sakte hain bina .env edit kiye.
+- Warning: WSL me stray `python3 -m http.server 8000` WSL localhost-forwarding se Windows
+  ke :8000 ko hijack kar leta hai (Python 404 pages dikhte hain). Aisa server 8000 par mat
+  chalana; ho to kill karo (`ss -tlnp | grep 8000`).
 
 ## API Contract (target)
 
@@ -70,6 +82,21 @@ Response shape: `{ "ok": true, "data": ... }`.
 ## Environment Quirks
 
 - Frontend runs on port 3000; Vite proxy `/api` -> backend 8000 (see `frontend/vite.config.ts`).
+- Vite proxy target `127.0.0.1` hai (localhost nahi) — artisan serve IPv4-only bind karta hai,
+  Node `::1` pehle try karta hai to proxy fail hota.
+- Frontend prod image me `/api` reverse-proxy built-in hai: `docker/nginx/default.conf.template`
+  + `BACKEND_URL` env (nginx templates). Compose: `http://api:8000`; host backend ke sath:
+  `-e BACKEND_URL=http://host.docker.internal:8000`. Prod-preview container **:3005** par
+  chalao (`front-prod-preview`), :3000 sirf vite dev ke liye — warna 404 confusion hota hai.
+- Production URL pattern: frontend relative `/api` hi call karta hai; same-origin reverse
+  proxy (nginx/K8s ingress) backend tak pohanchata hai. Alag domain ho to build-time
+  `VITE_API_URL=https://api.domain.com` set karo + backend CORS allowlist.
+- Frontend `node_modules` WINDOWS se install karo (`npm install` PowerShell me). WSL se
+  install karne par `.bin/` me `vite.cmd` shims nahi bante aur `npm run dev` fail hota hai.
+- Windows PowerShell execution policy ab CurrentUser=RemoteSigned set hai (npm.ps1 chalane
+  ke liye, 2026-08-21).
+- Bulk file ops (`rm -rf`) WSL se `/mnt/e` par "Cannot allocate memory" de sakte hain —
+  Windows side se karo (`Remove-Item -Recurse -Force`).
 - Laravel env: `backend/.env` (DO NOT commit). Seed data source: `frontend/src/data/mockData.ts`.
 
 ## Running Locally (once PHP + MySQL ready)

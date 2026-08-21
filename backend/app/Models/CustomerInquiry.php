@@ -21,6 +21,8 @@ use Illuminate\Support\Carbon;
 #[Fillable(['id', 'date', 'name', 'email', 'phone', 'subject', 'message', 'status'])]
 class CustomerInquiry extends Model
 {
+    protected $table = 'inquiries';
+
     public $incrementing = false;
 
     protected $keyType = 'string';

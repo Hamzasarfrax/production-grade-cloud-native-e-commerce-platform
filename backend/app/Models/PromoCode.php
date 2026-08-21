@@ -19,6 +19,7 @@ use Illuminate\Support\Carbon;
 #[Fillable(['code', 'discount_type', 'discount_value', 'min_spend', 'active'])]
 class PromoCode extends Model
 {
+    protected $table = 'promos';
     protected function casts(): array
     {
         return [

@@ -7,7 +7,13 @@ use App\Http\Controllers\Api\PromoController;
 use App\Http\Controllers\Api\StatsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/health', fn () => response()->json(['ok' => true, 'data' => 'Mxmobilz API is running']));
+Route::get('/health', fn () => response()->json(
+    [
+    'ok' => true,
+    'data' => 'Mxmobilz API is running'
+    ]
+
+    ));
 
 Route::apiResource('products', ProductController::class);
 
@@ -22,4 +28,4 @@ Route::delete('inquiries/{inquiry}', [InquiryController::class, 'destroy']);
 
 Route::apiResource('promos', PromoController::class);
 
-Route::get('stats', StatsController::class);
+Route::get('stats', [StatsController::class, 'index']);
