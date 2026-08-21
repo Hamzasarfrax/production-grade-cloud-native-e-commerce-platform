@@ -8,6 +8,9 @@ services:
     image: front-end-app:1.0.0
     ports:
       - "3000:80"
+    environment:
+      # frontend nginx ka /api reverse-proxy is service ko hit karega
+      BACKEND_URL: http://backend-nginx:80
     depends_on:
       - backend-nginx
     networks:
@@ -23,6 +26,8 @@ services:
       - "9000"
     env_file:
       - ./backend/.env
+    depends_on:
+      - mysql
     networks:
       - app_newtwork
 
@@ -33,7 +38,7 @@ services:
       - "8000:80"
     volumes:
       - ./backend:/var/www/html
-      - ./backend/docker/nginx/backend.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./backend/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - backend-app
     networks:
@@ -43,8 +48,9 @@ services:
     image: mysql:8.4
     container_name: ecommerce-mysql
     environment:
-      MYSQL_DATABASE: ecommerce
-      MYSQL_USER: ecommerce
+      # names backend/.env (Laravel) se match hone chahiye
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:

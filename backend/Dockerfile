@@ -1,6 +1,6 @@
-# API microservice — Laravel 13 + MySQL
-# Build: docker compose build api
-FROM php:8.3-cli
+# API microservice — Laravel 13 + MySQL (PHP-FPM, nginx isse FastCGI :9000 se baat karta hai)
+# Build: docker compose build backend-app
+FROM php:8.3-fpm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git unzip libzip-dev libpng-dev libonig-dev \
@@ -9,7 +9,9 @@ RUN apt-get update \
 
 COPY --from=composer:2.8 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www
+# Canonical app path: /var/www/html — nginx conf (root /var/www/html/public)
+# aur compose mount (./backend:/var/www/html) isi se match karte hain.
+WORKDIR /var/www/html
 
 COPY . .
 
@@ -17,13 +19,10 @@ RUN composer install --no-interaction --prefer-dist --no-scripts \
     && composer dump-autoload --optimize
 
 RUN cp .env.example .env \
-    && php -r "file_exists('database/database.sqlite') || touch('database/database.sqlite');" \
     && php artisan key:generate
 
 RUN chmod -R 777 storage bootstrap/cache
 
-EXPOSE 8000
+EXPOSE 9000
 
-
-
-CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8000"]
+CMD ["php-fpm"]

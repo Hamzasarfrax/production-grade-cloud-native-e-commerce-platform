@@ -1,5 +1,7 @@
 # Troubleshooting — Mxmobilz
 
+> Root full-stack compose ke Docker issues (2026-08-21): `docker-trouble.md` dekho.
+
 ## Issue: `Class "Laravel\Pail\PailServiceProvider" not found` (php artisan serve)
 
 Wajah: `bootstrap/cache/packages.php` + `services.php` stale caches (purane starter kit ke

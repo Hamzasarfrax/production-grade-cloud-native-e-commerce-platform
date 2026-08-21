@@ -16,7 +16,7 @@
 | Database  | MySQL             | —         | 3306  |
 | Web (UI)  | React 19 + Vite + TS | `frontend/` | 3000 |
 
-## Current State (last updated: 2026-08-13)
+## Current State (last updated: 2026-08-21)
 
 - [x] Git initialized at root (commits exist: `cloud-native-app`).
 - [x] `frontend/` — Full React e-commerce UI (Landing, Shop, Compare, Trade-in, Cart,
@@ -33,6 +33,15 @@
 - [x] Frontend <-> Backend API connection done (`src/api.ts`, App.tsx hydration, Vite proxy).
 - [x] Admin panel dynamic — API se data load + mutations (products/orders/inquiries + KPIs).
 - [x] docker-compose.yml done (mysql/api/web). Dockerfiles in `frontend/` + `backend/`.
+- [x] ROOT `docker-compose.yml` ab ACTIVE full stack hai (purana backend/docker-compose.yml
+      delete ho chuka): front-end-app :3000 (nginx, /api proxy via BACKEND_URL env) ->
+      backend-nginx :8000->80 -> backend-app FPM :9000 + mysql :3306. 2026-08-21 live verified:
+      migrate --seed ke baad :8000/api/products 200, :3000/api/orders 200, :3000/api/stats JSON.
+      Fixes is run me: nginx conf path (`default.conf`, stray `docker/nginx/backend.conf/` dir
+      Docker ne auto-create ki thi — deleted), corrupt mysql volume (`down -v` se reset),
+      DB name/user root `.env` me backend/.env se match (`cloud-native`), Dockerfile base
+      php:8.3-cli->php:8.3-fpm CMD php-fpm, canonical path `/var/www/html` (WORKDIR = nginx
+      root = compose mount). Migrate container me: `docker compose exec backend-app php artisan migrate --seed --force`.
 - [ ] README/docs architecture — done, rest (deployment/runbook/security) pending.
 - [ ] Auth (Laravel Sanctum) for protected admin + `/api` — pending.
 - [ ] K8s + ArgoCD manifests fill (folders exist, empty) — pending.
