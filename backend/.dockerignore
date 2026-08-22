@@ -17,6 +17,10 @@ storage/framework/sessions/*
 storage/framework/views/*
 storage/framework/testing/*
 
+# Stale package caches (host ke purane caches image me na ghusen —
+# Laravel runtime par khud regenerate kar leta hai)
+bootstrap/cache/*.php
+
 # Git
 .git/
 .github/

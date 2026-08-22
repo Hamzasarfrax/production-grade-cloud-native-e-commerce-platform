@@ -166,3 +166,97 @@ GET :3000/api/stats     → {"ok":true,"data":{...real KPIs...}}
    - `File not found.` plain text (404) → FPM ko SCRIPT_FILENAME nahi mila (path mismatch)
    - HTML 404 nginx page → request Laravel tak pahunchi hi nahi
    - JSON `{"message":"..."}` 404 → Laravel route nahi mila (routes check karo)
+
+---
+
+# Incident 2 — Multi-stage Dockerfile Rewrite (2026-08-21, same day)
+
+Backend Dockerfile ko proper production-style **3-stage build** me rewrite kiya gaya
+(`vendor` [composer] → `production`/`stage-1` [php:8.3-fpm-bookworm]). Iske sath ye issues aaye:
+
+### 1. `composer: not found` (exit 127)
+- **Kya tha:** Production stage (`php:8.3-fpm`) me `RUN composer dump-autoload` chala,
+  lekin wo image me composer binary hota hi nahi — wo sirf `composer:2.8` stage me tha.
+- **Lesson:** Multi-stage me har stage sirf wahi cheezein dekhta hai jo usme explicitly
+  COPY ki gayi hain. Binary chahiye to `COPY --from=<stage>` karna padega.
+- **Fix:** `COPY --from=vendor /usr/bin/composer /usr/bin/composer`
+
+### 2. `chmod: Operation not permitted`
+- **Kya tha:** Entrypoint ka `COPY` + `chmod +x` **`USER www-data` ke baad** rakha tha —
+  non-root user `/usr/local/bin` me chmod nahi kar sakta.
+- **Fix:** COPY/chmod/ENTRYPOINT ko `USER www-data` se pehle shift kar diya.
+- **Lesson:** `USER` directive ke baad ke sab RUN steps usi user ke sath chalte hain;
+  privileged ops pehle karo.
+
+### 3. `Class "Laravel\Pail\PailServiceProvider" not found` (wapas aaya)
+- **Kya tha:** Host ka stale `bootstrap/cache/packages.php` `COPY . .` ke sath image me
+  chala gaya (purane starter kit ke providers reference karta tha).
+- **Permanent fix:**
+  - `.dockerignore` me `bootstrap/cache/*.php` add kiya (stale caches kabhi image na ghusen)
+  - Build me `RUN rm -f bootstrap/cache/packages.php bootstrap/cache/services.php`
+    (double insurance — Laravel inhe khud regenerate karta hai)
+
+### 4. `lookup auth.docker.io: no such host`
+- **Kya tha:** Code ka issue NAHI — Docker Hub tak DNS/internet flake. Dobara try karne
+  par theek ho jata hai. Bar-bar aaye to internet check karo ya Docker Desktop restart.
+
+### 5. `up -d` ke turant baad 502
+- **Kya tha:** Backend container start ho chuka hota hai par entrypoint abhi migrate/seed
+  kar raha hota hai — FPM abhi listen nahi kar raha.
+- **Fix:** Kuch seconds ruko; `docker logs ecommerce-backend-app` me
+  `ready to handle connections` aane par hit karo. Ye error nahi, timing hai.
+
+**Final verified state:** fresh volume → auto migrate+seed → `:8000/api/products` 200,
+`:3000/api/products` 200, stats JSON OK. Image tag: `backend-app:1.0.2`.
+
+---
+
+# Image Size Optimization — Multi-stage Rewrite ka Result (2026-08-21)
+
+## Backend image: 1.05GB → 767MB (~27% kam)
+
+| Image | Stage | Size | Base |
+|---|---|---|---|
+| `backend-app:1.0.1` | Purana single-stage (cli + artisan serve) | **1.05GB** | php:8.3-cli |
+| `backend-app:1.0.2` | Naya multi-stage (vendor → production) | **767MB** | php:8.3-fpm-bookworm |
+
+### Chhota kyun hua + kya improve hua
+
+1. **Multi-stage build** — composer install sirf `vendor` stage me hota hai; final image
+   me sirf ready-made `vendor/` folder copy hota hai. Build tools/apt cache final layers
+   se bahar rehte hain.
+2. **apt layer consolidated + cleaned** — ek hi RUN me install + `docker-php-ext-install`
+   + `rm -rf /var/lib/apt/lists/*` (apt lists ~100MB+ save; alag-alag RUN me rm bekaar
+   hota kyunki har layer apna data rakhti hai).
+3. **`--no-dev` dependencies** — dev-only packages (faker, phpunit waghera) image me nahi.
+4. **Layer cache ordering** — pehle `COPY composer.json composer.lock` → `composer install`,
+   PHIR `COPY . .`. Code change par vendor layer CACHE hit hota hai (47s composer install
+   skip) — sirf code copy + dump-autoload dobara chalta hai.
+5. **`USER www-data`** — root nahi chal raha (security hardening).
+6. **opcache enabled** — runtime performance (size se related nahi, production best practice).
+
+> Note: Composer binary jaan-boojh kar final image me hai (`dump-autoload` code-copy ke
+> baad chalana zaroori tha). Agar aur size chahiye to dump-autoload ko separate stage me
+> chala kar sirf output COPY kiya ja sakta hai — abhi ke liye trade-off theek hai.
+
+## Frontend image: 95.9MB (pehle se hi multi-stage tha)
+
+`node:22-alpine` builder → `nginx:alpine` runtime. Node toolchain (~400MB+) final image
+me NAHI jata — sirf static `dist/` files jati hain. Ye already ideal pattern hai.
+
+Ek naming bug bhi fix hua: pehle frontend ka tag ghalat tha (`backend-app:1.0.0` frontend
+image par!) — ab `front-end-app:1.0.0` sahi naam se hai.
+
+## Reference sizes (context)
+
+| Image | Size | Note |
+|---|---|---|
+| mysql:8.4 | 1.12GB | official image — hum isko optimize nahi karte, base hi itna hai |
+| nginx:alpine | 94.2MB | backend-nginx + frontend dono ka runtime |
+
+## Purani image cleanup
+
+```powershell
+docker rmi backend-app:1.0.1        # 1.05GB wali purani image delete
+docker image prune                   # dangling layers bhi saaf
+```

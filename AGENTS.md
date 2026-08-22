@@ -47,7 +47,23 @@
       mysql healthcheck (`mysqladmin ping`) + backend `depends_on: condition: service_healthy`.
       Naye user ke liye sirf `docker compose up -d --build` kafi hai — verified: fresh
       volume par auto migrate+seed, restart par "skipping seed" (no duplicates).
-- [ ] README/docs architecture — done, rest (deployment/runbook/security) pending.
+- [x] Backend Dockerfile MULTI-STAGE rewrite (2026-08-21, user ne kiya): `vendor`
+      (composer:2.8, --no-dev) → production (php:8.3-fpm-bookworm + pdo_mysql/zip/gd/opcache,
+      USER www-data). Fixes is rewrite me: composer binary `COPY --from=vendor /usr/bin/composer`,
+      entrypoint COPY/chmod ko USER www-data se PEHLE (non-root chmod denied), stale
+      bootstrap/cache ka permanent ilaaj (.dockerignore `bootstrap/cache/*.php` + build-time rm),
+      DNS flake (`auth.docker.io no such host`) transient tha. Verified: backend-app:1.0.2,
+      fresh volume auto-setup, :8000 + :3000 dono 200. Details: docs/docker-trouble.md Incident 2.
+- [x] Image size result (2026-08-21): backend 1.05GB→767MB (~27% kam, multi-stage +
+      cache layering + apt clean + --no-dev). Frontend 95.9MB (node builder → nginx:alpine,
+      pehle se optimal). Purani image `backend-app:1.0.1` delete karne ke liye `docker rmi`.
+      Numbers: docs/docker-trouble.md "Image Size Optimization" section.
+- [x] docs/docker.md REWRITE (2026-08-22): purana single-stage backend walkthrough hata ke
+      current multi-stage (backend+frontend) line-by-line, entrypoint auto-setup, compose
+      architecture diagram, production best-practices review (~80% done; gaps: K8s migrate Job,
+      registry-prefixed git-SHA tags, nginx pin, /up health endpoint), aur Registry Push Workflow
+      (dono images alag repos me `docker.io/<user>/mxmobilz-{api,web}:<sha>` tag/push) add.
+- [ ] README/docs — deployment/runbook/security/troubleshooting abhi bhi pending.
 - [ ] Auth (Laravel Sanctum) for protected admin + `/api` — pending.
 - [ ] K8s + ArgoCD manifests fill (folders exist, empty) — pending.
 
