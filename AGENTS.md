@@ -6,6 +6,8 @@
 
 ## Project Overview
 
+##################
+
 "Mxmobilz" — E-commerce web app (mobile phones). Microservices architecture.
 
 | Service   | Tech              | Folder    | Port  |
@@ -14,18 +16,54 @@
 | Database  | MySQL             | —         | 3306  |
 | Web (UI)  | React 19 + Vite + TS | `frontend/` | 3000 |
 
-## Current State (last updated: 2026-08-13)
+## Current State (last updated: 2026-08-21)
 
 - [x] Git initialized at root (commits exist: `cloud-native-app`).
 - [x] `frontend/` — Full React e-commerce UI (Landing, Shop, Compare, Trade-in, Cart,
       Checkout, Contact, Admin Dashboard). Data abhi `src/data/mockData.ts` + localStorage
       se aata hai.
-- [x] `backend/` — Fresh Laravel 13 (Chisel + Fortify + Inertia) bundle install kiya hua hai.
+- [x] `backend/` — Pure JSON API (Laravel 13). Starter kit ka React/TSX/Inertia/Fortify/Chisel
+      frontend REMOVE ho chuka hai (resources/js, views, web routes, vite/npm tooling sab deleted).
+      Sirf `routes/api.php` + Api controllers + models + migrations + seeders hain.
 - [x] Backend API done: models, migrations, seeders, controllers, `routes/api.php`, CORS. MySQL `.env`.
+- [x] Backend Docker (backend/docker-compose.yml: FPM app + nginx :8080 + mysql) — live verified.
+      Nginx conf mount fix (`docker/nginx/default.conf`), models me explicit `$table` set
+      (CustomerInquiry->inquiries, PromoCode->promos). Stale bootstrap/cache issue bhi fix hua
+      (docs/troubleshooting.md dekho).
 - [x] Frontend <-> Backend API connection done (`src/api.ts`, App.tsx hydration, Vite proxy).
 - [x] Admin panel dynamic — API se data load + mutations (products/orders/inquiries + KPIs).
 - [x] docker-compose.yml done (mysql/api/web). Dockerfiles in `frontend/` + `backend/`.
-- [ ] README/docs architecture — done, rest (deployment/runbook/security) pending.
+- [x] ROOT `docker-compose.yml` ab ACTIVE full stack hai (purana backend/docker-compose.yml
+      delete ho chuka): front-end-app :3000 (nginx, /api proxy via BACKEND_URL env) ->
+      backend-nginx :8000->80 -> backend-app FPM :9000 + mysql :3306. 2026-08-21 live verified:
+      migrate --seed ke baad :8000/api/products 200, :3000/api/orders 200, :3000/api/stats JSON.
+      Fixes is run me: nginx conf path (`default.conf`, stray `docker/nginx/backend.conf/` dir
+      Docker ne auto-create ki thi — deleted), corrupt mysql volume (`down -v` se reset),
+      DB name/user root `.env` me backend/.env se match (`cloud-native`), Dockerfile base
+      php:8.3-cli->php:8.3-fpm CMD php-fpm, canonical path `/var/www/html` (WORKDIR = nginx
+      root = compose mount). Migrate container me: `docker compose exec backend-app php artisan migrate --seed --force`.
+- [x] AUTO-SETUP (2026-08-21): `backend/docker/entrypoint.sh` — har start par DB wait +
+      `migrate --force` + seed SIRF empty DB par (products count check), phir php-fpm exec.
+      mysql healthcheck (`mysqladmin ping`) + backend `depends_on: condition: service_healthy`.
+      Naye user ke liye sirf `docker compose up -d --build` kafi hai — verified: fresh
+      volume par auto migrate+seed, restart par "skipping seed" (no duplicates).
+- [x] Backend Dockerfile MULTI-STAGE rewrite (2026-08-21, user ne kiya): `vendor`
+      (composer:2.8, --no-dev) → production (php:8.3-fpm-bookworm + pdo_mysql/zip/gd/opcache,
+      USER www-data). Fixes is rewrite me: composer binary `COPY --from=vendor /usr/bin/composer`,
+      entrypoint COPY/chmod ko USER www-data se PEHLE (non-root chmod denied), stale
+      bootstrap/cache ka permanent ilaaj (.dockerignore `bootstrap/cache/*.php` + build-time rm),
+      DNS flake (`auth.docker.io no such host`) transient tha. Verified: backend-app:1.0.2,
+      fresh volume auto-setup, :8000 + :3000 dono 200. Details: docs/docker-trouble.md Incident 2.
+- [x] Image size result (2026-08-21): backend 1.05GB→767MB (~27% kam, multi-stage +
+      cache layering + apt clean + --no-dev). Frontend 95.9MB (node builder → nginx:alpine,
+      pehle se optimal). Purani image `backend-app:1.0.1` delete karne ke liye `docker rmi`.
+      Numbers: docs/docker-trouble.md "Image Size Optimization" section.
+- [x] docs/docker.md REWRITE (2026-08-22): purana single-stage backend walkthrough hata ke
+      current multi-stage (backend+frontend) line-by-line, entrypoint auto-setup, compose
+      architecture diagram, production best-practices review (~80% done; gaps: K8s migrate Job,
+      registry-prefixed git-SHA tags, nginx pin, /up health endpoint), aur Registry Push Workflow
+      (dono images alag repos me `docker.io/<user>/mxmobilz-{api,web}:<sha>` tag/push) add.
+- [ ] README/docs — deployment/runbook/security/troubleshooting abhi bhi pending.
 - [ ] Auth (Laravel Sanctum) for protected admin + `/api` — pending.
 - [ ] K8s + ArgoCD manifests fill (folders exist, empty) — pending.
 
@@ -42,9 +80,15 @@
   `apiMode`; connected hone par sab mutations API se hote hain.
 - Backend JSON keys camelCase hain — `toApi()` on models + `resolveProductAttributes()` in
   ProductController camelCase->snake_case map karta hai.
-- Note: Is WSL me PHP 8.3/MySQL/Docker install nahi hai (Windows `php.exe` 8.2 hai — Laravel
-  13 chalta nahi). Frontend typecheck + build verified `npm run lint` / `vite build`. Backend
-  PHP files syntax-lint passed (php -l). Actual run Docker/CI me hoga.
+- Note: Is WSL me PHP/MySQL install nahi hai, Docker hai. Windows `php.exe` 8.3.14 hai —
+  `php artisan serve` (Windows :8000) verified working. Frontend typecheck + build verified
+  `npm run lint` / `vite build`. Backend PHP files syntax-lint passed (php -l).
+- DB_HOST split (2026-08-21): `.env` me `DB_HOST=127.0.0.1` (local serve ke liye);
+  docker-compose.yml backend-app me `environment: DB_HOST=mysql` override hai. Dono stacks
+  ek sath chal sakte hain bina .env edit kiye.
+- Warning: WSL me stray `python3 -m http.server 8000` WSL localhost-forwarding se Windows
+  ke :8000 ko hijack kar leta hai (Python 404 pages dikhte hain). Aisa server 8000 par mat
+  chalana; ho to kill karo (`ss -tlnp | grep 8000`).
 
 ## API Contract (target)
 
@@ -68,6 +112,21 @@ Response shape: `{ "ok": true, "data": ... }`.
 ## Environment Quirks
 
 - Frontend runs on port 3000; Vite proxy `/api` -> backend 8000 (see `frontend/vite.config.ts`).
+- Vite proxy target `127.0.0.1` hai (localhost nahi) — artisan serve IPv4-only bind karta hai,
+  Node `::1` pehle try karta hai to proxy fail hota.
+- Frontend prod image me `/api` reverse-proxy built-in hai: `docker/nginx/default.conf.template`
+  + `BACKEND_URL` env (nginx templates). Compose: `http://api:8000`; host backend ke sath:
+  `-e BACKEND_URL=http://host.docker.internal:8000`. Prod-preview container **:3005** par
+  chalao (`front-prod-preview`), :3000 sirf vite dev ke liye — warna 404 confusion hota hai.
+- Production URL pattern: frontend relative `/api` hi call karta hai; same-origin reverse
+  proxy (nginx/K8s ingress) backend tak pohanchata hai. Alag domain ho to build-time
+  `VITE_API_URL=https://api.domain.com` set karo + backend CORS allowlist.
+- Frontend `node_modules` WINDOWS se install karo (`npm install` PowerShell me). WSL se
+  install karne par `.bin/` me `vite.cmd` shims nahi bante aur `npm run dev` fail hota hai.
+- Windows PowerShell execution policy ab CurrentUser=RemoteSigned set hai (npm.ps1 chalane
+  ke liye, 2026-08-21).
+- Bulk file ops (`rm -rf`) WSL se `/mnt/e` par "Cannot allocate memory" de sakte hain —
+  Windows side se karo (`Remove-Item -Recurse -Force`).
 - Laravel env: `backend/.env` (DO NOT commit). Seed data source: `frontend/src/data/mockData.ts`.
 
 ## Running Locally (once PHP + MySQL ready)

@@ -1,0 +1,382 @@
+- generic [ref=f2e3]:
+  - banner [ref=f2e4]:
+    - generic [ref=f2e5]:
+      - generic [ref=f2e6]:
+        - generic [ref=f2e7]: 100% Genuine Mobile Guarantee
+        - generic [ref=f2e11]: Free 30-Day Express Returns
+      - generic [ref=f2e17]:
+        - generic [ref=f2e18]: OFFER
+        - generic [ref=f2e19]: Get up to $800 Trade-In Credit on iPhone 16 & Galaxy S25!
+        - button "Calculate" [ref=f2e20] [cursor=pointer]
+    - generic [ref=f2e21]:
+      - generic [ref=f2e22]:
+        - generic [ref=f2e29] [cursor=pointer]:
+          - generic [ref=f2e30]:
+            - generic [ref=f2e31]: Mxmobilz
+            - generic [ref=f2e32]: PRO
+          - paragraph [ref=f2e33]: iPhone & Android Flagship Store
+        - textbox "Search iPhone 16 Pro, Galaxy S25, Pixel 9..." [ref=f2e36]
+        - generic [ref=f2e40]:
+          - button "Admin Panel" [ref=f2e41] [cursor=pointer]
+          - button "View Shopping Cart" [ref=f2e45] [cursor=pointer]:
+            - generic [ref=f2e49]: Cart
+          - button [ref=f2e50] [cursor=pointer]
+      - generic [ref=f2e52]:
+        - generic [ref=f2e53]:
+          - generic [ref=f2e54]: "Quick Brands:"
+          - button "iPhone" [ref=f2e55] [cursor=pointer]
+          - button "Samsung Galaxy" [ref=f2e59] [cursor=pointer]
+          - button "Google Pixel" [ref=f2e60] [cursor=pointer]
+          - button "OnePlus" [ref=f2e61] [cursor=pointer]
+          - button "Nothing Phone" [ref=f2e62] [cursor=pointer]
+        - generic [ref=f2e63]: 0% APR Financing Available
+  - main [ref=f2e68]:
+    - generic [ref=f2e69]:
+      - generic [ref=f2e72]:
+        - generic [ref=f2e73]:
+          - generic [ref=f2e74]: Next-Generation Flagship Mobile Collection 2026
+          - heading "Upgrade to Titanium Performance" [level=1] [ref=f2e79]
+          - paragraph [ref=f2e80]: Discover the latest iPhone 16 Pro Max with Camera Control and Samsung Galaxy S25 Ultra with 200MP Galaxy AI. Certified 100% genuine with 1-Year Warranty and 24-Hour Express Dispatch.
+          - generic [ref=f2e81]:
+            - button "Explore All Mobiles" [ref=f2e82] [cursor=pointer]
+            - button "Calculate Trade-In Credit" [ref=f2e86] [cursor=pointer]
+          - generic [ref=f2e92]:
+            - generic [ref=f2e93]:
+              - generic [ref=f2e94]: 100%
+              - generic [ref=f2e95]: Original Factory Sealed
+            - generic [ref=f2e96]:
+              - generic [ref=f2e97]: $800 Max
+              - generic [ref=f2e98]: Instant Trade-In Value
+            - generic [ref=f2e99]:
+              - generic [ref=f2e100]: 4.9 ★★★★★
+              - generic [ref=f2e101]: Over 1,200+ Reviews
+        - generic [ref=f2e103]:
+          - img "Mxmobilz iPhone and Android Flagships Showcase" [ref=f2e104]
+          - generic [ref=f2e105]: In Stock • Ready for Same-Day Dispatch
+          - generic [ref=f2e108]:
+            - generic [ref=f2e109]: Save Up To $200 Today
+            - generic [ref=f2e114]: Free 1-Year Mxmobilz Shield Included
+      - generic [ref=f2e116]:
+        - generic [ref=f2e117]:
+          - generic [ref=f2e118]:
+            - heading "Shop By Mobile OS & Brand" [level=2] [ref=f2e119]
+            - paragraph [ref=f2e120]: Select your preferred ecosystem to browse top flagship models
+          - button "View Entire Mobile Store Catalog" [ref=f2e121] [cursor=pointer]
+        - generic [ref=f2e124]:
+          - generic [ref=f2e125] [cursor=pointer]:
+            - heading "Apple iPhone" [level=3] [ref=f2e130]
+            - paragraph [ref=f2e131]: iOS 18 • A18 Pro Chip • Titanium Frame
+            - generic [ref=f2e132]: Explore iPhones
+          - generic [ref=f2e136] [cursor=pointer]:
+            - heading "Samsung Galaxy" [level=3] [ref=f2e140]
+            - paragraph [ref=f2e141]: One UI 7 • Galaxy AI • 200MP Camera
+            - generic [ref=f2e142]: Explore Galaxy
+          - generic [ref=f2e146] [cursor=pointer]:
+            - heading "Google Pixel" [level=3] [ref=f2e150]
+            - paragraph [ref=f2e151]: Pure Android 15 • Gemini AI • Actua OLED
+            - generic [ref=f2e152]: Explore Pixel
+          - generic [ref=f2e156] [cursor=pointer]:
+            - heading "OnePlus & Others" [level=3] [ref=f2e161]
+            - paragraph [ref=f2e162]: 100W SUPERVOOC • Hasselblad Camera
+            - generic [ref=f2e163]: Explore OnePlus
+      - generic [ref=f2e168]:
+        - generic [ref=f2e169]:
+          - generic [ref=f2e170]: Featured Flagships
+          - heading "Top Selling Mobile Devices" [level=2] [ref=f2e174]
+          - paragraph [ref=f2e175]: Handpicked premium mobile phones with highest customer satisfaction ratings and full manufacturer warranty.
+        - generic [ref=f2e176]:
+          - generic [ref=f2e177]:
+            - generic [ref=f2e178]:
+              - img "Apple iPhone 16 Pro Max" [ref=f2e179]
+              - generic [ref=f2e180]:
+                - generic [ref=f2e181]: BEST SELLER
+                - generic [ref=f2e182]: iOS
+              - generic [ref=f2e183]: New
+              - button "Quick View Details" [ref=f2e184]
+            - generic [ref=f2e188]:
+              - generic [ref=f2e189]:
+                - generic [ref=f2e190]:
+                  - generic [ref=f2e191]: Apple
+                  - generic [ref=f2e192]: 4.9 (342)
+                - heading "Apple iPhone 16 Pro Max" [level=3] [ref=f2e196] [cursor=pointer]
+                - paragraph [ref=f2e197]: The ultimate iPhone engineered with grade 5 titanium, groundbreaking A18 Pro chip, and revolutionary Camera Control button for cinematic video capture.
+              - generic [ref=f2e198]:
+                - generic [ref=f2e199]: Apple A18 Pro (3nm)
+                - generic [ref=f2e204]: 48MP Fusion Camera
+              - generic [ref=f2e209]:
+                - generic [ref=f2e210]:
+                  - generic [ref=f2e211]:
+                    - generic [ref=f2e212]: $1199
+                    - generic [ref=f2e213]: $1299
+                  - text: Free Express Delivery
+                - button "Add" [ref=f2e215] [cursor=pointer]
+          - generic [ref=f2e219]:
+            - generic [ref=f2e220]:
+              - img "Samsung Galaxy S25 Ultra" [ref=f2e221]
+              - generic [ref=f2e222]:
+                - generic [ref=f2e223]: BEST SELLER
+                - generic [ref=f2e224]: Android
+              - generic [ref=f2e225]: New
+              - button "Quick View Details" [ref=f2e226]
+            - generic [ref=f2e230]:
+              - generic [ref=f2e231]:
+                - generic [ref=f2e232]:
+                  - generic [ref=f2e233]: Samsung
+                  - generic [ref=f2e234]: 4.9 (289)
+                - heading "Samsung Galaxy S25 Ultra" [level=3] [ref=f2e238] [cursor=pointer]
+                - paragraph [ref=f2e239]: Unrivaled Galaxy AI power paired with built-in S Pen, 200MP Quad Tele System camera, and glare-free Armor Aluminum & Titanium frame.
+              - generic [ref=f2e240]:
+                - generic [ref=f2e241]: Snapdragon 8 Elite for Galaxy
+                - generic [ref=f2e246]: 200MP Ultra-Clear
+              - generic [ref=f2e251]:
+                - generic [ref=f2e252]:
+                  - generic [ref=f2e253]:
+                    - generic [ref=f2e254]: $1299
+                    - generic [ref=f2e255]: $1399
+                  - text: Free Express Delivery
+                - button "Add" [ref=f2e257] [cursor=pointer]
+          - generic [ref=f2e261]:
+            - generic [ref=f2e262]:
+              - img "Apple iPhone 16 Pro" [ref=f2e263]
+              - generic [ref=f2e264]: iOS
+              - generic [ref=f2e266]: New
+              - button "Quick View Details" [ref=f2e267]
+            - generic [ref=f2e271]:
+              - generic [ref=f2e272]:
+                - generic [ref=f2e273]:
+                  - generic [ref=f2e274]: Apple
+                  - generic [ref=f2e275]: 4.8 (215)
+                - heading "Apple iPhone 16 Pro" [level=3] [ref=f2e279] [cursor=pointer]
+                - paragraph [ref=f2e280]: Pro performance in a compact 6.3-inch titanium frame. Powered by Apple Intelligence and 4K 120 fps Dolby Vision recording.
+              - generic [ref=f2e281]:
+                - generic [ref=f2e282]: Apple A18 Pro
+                - generic [ref=f2e287]: 48MP Fusion Camera
+              - generic [ref=f2e292]:
+                - generic [ref=f2e293]:
+                  - generic [ref=f2e294]:
+                    - generic [ref=f2e295]: $999
+                    - generic [ref=f2e296]: $1099
+                  - text: Free Express Delivery
+                - button "Add" [ref=f2e298] [cursor=pointer]
+          - generic [ref=f2e302]:
+            - generic [ref=f2e303]:
+              - img "Google Pixel 9 Pro XL" [ref=f2e304]
+              - generic [ref=f2e305]:
+                - generic [ref=f2e306]: BEST SELLER
+                - generic [ref=f2e307]: Android
+              - generic [ref=f2e308]: New
+              - button "Quick View Details" [ref=f2e309]
+            - generic [ref=f2e313]:
+              - generic [ref=f2e314]:
+                - generic [ref=f2e315]:
+                  - generic [ref=f2e316]: Google
+                  - generic [ref=f2e317]: 4.8 (178)
+                - heading "Google Pixel 9 Pro XL" [level=3] [ref=f2e321] [cursor=pointer]
+                - paragraph [ref=f2e322]: The most powerful Pixel yet featuring Gemini Nano AI built into Android, unbelievable computational photography, and 7 years of OS updates.
+              - generic [ref=f2e323]:
+                - generic [ref=f2e324]: Google Tensor G4 + Titan M2
+                - generic [ref=f2e329]: 50MP Octa PD
+              - generic [ref=f2e334]:
+                - generic [ref=f2e335]:
+                  - generic [ref=f2e336]:
+                    - generic [ref=f2e337]: $1099
+                    - generic [ref=f2e338]: $1199
+                  - text: Free Express Delivery
+                - button "Add" [ref=f2e340] [cursor=pointer]
+          - generic [ref=f2e344]:
+            - generic [ref=f2e345]:
+              - img "Samsung Galaxy Z Fold 6"
+              - generic [ref=f2e346]: Android
+              - generic [ref=f2e348]: New
+              - button "Quick View Details" [ref=f2e349]
+            - generic [ref=f2e353]:
+              - generic [ref=f2e354]:
+                - generic [ref=f2e355]:
+                  - generic [ref=f2e356]: Samsung
+                  - generic [ref=f2e357]: 4.7 (96)
+                - heading "Samsung Galaxy Z Fold 6" [level=3] [ref=f2e361] [cursor=pointer]
+                - paragraph [ref=f2e362]: Ultra-slim dual screen foldable powerhouse. Multitask with 3 split-screen windows, Galaxy AI circle to search, and S Pen support.
+              - generic [ref=f2e363]:
+                - generic [ref=f2e364]: Snapdragon 8 Gen 3 for Galaxy
+                - generic [ref=f2e369]: 50MP OIS Wide
+              - generic [ref=f2e374]:
+                - generic [ref=f2e375]:
+                  - generic [ref=f2e376]:
+                    - generic [ref=f2e377]: $1699
+                    - generic [ref=f2e378]: $1899
+                  - text: Free Express Delivery
+                - button "Add" [ref=f2e380] [cursor=pointer]
+      - generic [ref=f2e386]:
+        - generic [ref=f2e387]:
+          - generic [ref=f2e388]: Trade-In Estimator
+          - heading "Turn Your Old Phone Into Instant Cash Credit" [level=2] [ref=f2e394]
+          - paragraph [ref=f2e395]: Trade in your old iPhone or Android device and receive up to $800 towards any new device. Free prepaid shipping kit provided!
+          - generic [ref=f2e396]:
+            - generic [ref=f2e397]: Guaranteed quote locked for 14 days
+            - generic [ref=f2e401]: Free data wipe & factory reset instructions
+            - generic [ref=f2e405]: Instant credit applied directly at checkout
+        - generic [ref=f2e409]:
+          - heading "Estimate Trade-In Value Step 1 of 2" [level=3] [ref=f2e410]:
+            - generic [ref=f2e411]: Estimate Trade-In Value
+            - generic [ref=f2e412]: Step 1 of 2
+          - generic [ref=f2e413]:
+            - generic [ref=f2e414]:
+              - generic [ref=f2e415]: Select Brand
+              - combobox [ref=f2e416]:
+                - option "Apple iPhone" [selected]
+                - option "Samsung Galaxy"
+                - option "Google Pixel"
+            - generic [ref=f2e417]:
+              - generic [ref=f2e418]: Model & Storage
+              - combobox [ref=f2e419]:
+                - option "iPhone 15 Pro Max 256GB"
+                - option "iPhone 14 Pro Max 256GB" [selected]
+                - option "iPhone 13 Pro 128GB"
+                - option "Samsung Galaxy S24 Ultra"
+                - option "Samsung Galaxy S23 Ultra"
+            - generic [ref=f2e420]:
+              - generic [ref=f2e421]: Device Condition
+              - generic [ref=f2e422]:
+                - button "Flawless" [ref=f2e423] [cursor=pointer]
+                - button "Good" [ref=f2e424] [cursor=pointer]
+                - button "Fair" [ref=f2e425] [cursor=pointer]
+          - generic [ref=f2e426]:
+            - generic [ref=f2e427]:
+              - generic [ref=f2e428]: Estimated Trade-In Credit
+              - generic [ref=f2e429]: $460
+            - button "Claim This Quote" [ref=f2e430] [cursor=pointer]
+      - generic [ref=f2e432]:
+        - generic [ref=f2e433]:
+          - generic [ref=f2e434]:
+            - generic [ref=f2e435]: Head-to-Head Comparison
+            - heading "Compare iOS vs Android Flagships" [level=2] [ref=f2e440]
+          - button "Open Full Compare Matrix" [ref=f2e441] [cursor=pointer]
+        - generic [ref=f2e444]:
+          - generic [ref=f2e445]:
+            - generic [ref=f2e446]:
+              - img "Apple iPhone 16 Pro Max" [ref=f2e447]
+              - generic [ref=f2e448]:
+                - heading "Apple iPhone 16 Pro Max" [level=3] [ref=f2e449]
+                - generic [ref=f2e450]: $1199
+            - list [ref=f2e451]:
+              - listitem [ref=f2e452]:
+                - generic [ref=f2e453]: "Chipset:"
+                - generic [ref=f2e454]: A18 Pro (3nm)
+              - listitem [ref=f2e455]:
+                - generic [ref=f2e456]: "Display:"
+                - generic [ref=f2e457]: 6.9" 120Hz OLED
+              - listitem [ref=f2e458]:
+                - generic [ref=f2e459]: "Main Camera:"
+                - generic [ref=f2e460]: 48MP Fusion
+              - listitem [ref=f2e461]:
+                - generic [ref=f2e462]: "Battery:"
+                - generic [ref=f2e463]: 4685 mAh (33h video)
+          - generic [ref=f2e464]:
+            - generic [ref=f2e465]:
+              - img "Samsung Galaxy S25 Ultra" [ref=f2e466]
+              - generic [ref=f2e467]:
+                - heading "Samsung Galaxy S25 Ultra" [level=3] [ref=f2e468]
+                - generic [ref=f2e469]: $1299
+            - list [ref=f2e470]:
+              - listitem [ref=f2e471]:
+                - generic [ref=f2e472]: "Chipset:"
+                - generic [ref=f2e473]: Snapdragon 8 Elite
+              - listitem [ref=f2e474]:
+                - generic [ref=f2e475]: "Display:"
+                - generic [ref=f2e476]: 6.8" 120Hz Anti-Glare
+              - listitem [ref=f2e477]:
+                - generic [ref=f2e478]: "Main Camera:"
+                - generic [ref=f2e479]: 200MP Quad Tele
+              - listitem [ref=f2e480]:
+                - generic [ref=f2e481]: "Battery:"
+                - generic [ref=f2e482]: 5000 mAh (45W Fast)
+          - generic [ref=f2e483]:
+            - generic [ref=f2e484]:
+              - img "Google Pixel 9 Pro XL" [ref=f2e485]
+              - generic [ref=f2e486]:
+                - heading "Google Pixel 9 Pro XL" [level=3] [ref=f2e487]
+                - generic [ref=f2e488]: $1099
+            - list [ref=f2e489]:
+              - listitem [ref=f2e490]:
+                - generic [ref=f2e491]: "Chipset:"
+                - generic [ref=f2e492]: Google Tensor G4
+              - listitem [ref=f2e493]:
+                - generic [ref=f2e494]: "Display:"
+                - generic [ref=f2e495]: 6.8" Super Actua
+              - listitem [ref=f2e496]:
+                - generic [ref=f2e497]: "Main Camera:"
+                - generic [ref=f2e498]: 50MP Octa PD
+              - listitem [ref=f2e499]:
+                - generic [ref=f2e500]: "Battery:"
+                - generic [ref=f2e501]: 5060 mAh
+  - contentinfo [ref=f2e502]:
+    - generic [ref=f2e504]:
+      - generic [ref=f2e512]:
+        - heading "Free Express Shipping" [level=4] [ref=f2e513]
+        - paragraph [ref=f2e514]: On all flagship orders over $499
+      - generic [ref=f2e520]:
+        - heading "1-Year Official Warranty" [level=4] [ref=f2e521]
+        - paragraph [ref=f2e522]: 100% genuine original devices
+      - generic [ref=f2e528]:
+        - heading "30-Day Money Back" [level=4] [ref=f2e529]
+        - paragraph [ref=f2e530]: Hassle-free return & replacement
+      - generic [ref=f2e535]:
+        - heading "24/7 Mobile Specialists" [level=4] [ref=f2e536]
+        - paragraph [ref=f2e537]: Live expert consultation
+    - generic [ref=f2e538]:
+      - generic [ref=f2e539]:
+        - generic [ref=f2e540] [cursor=pointer]: Mxmobilz
+        - paragraph [ref=f2e545]: Mxmobilz is the premier authorized digital destination for authentic Apple iPhones, Samsung Galaxy flagships, Google Pixel, and high-performance Android devices with trade-in guarantee and express dispatch.
+        - generic [ref=f2e546]:
+          - generic [ref=f2e547]: 450 Fifth Avenue, Midtown Tech District, New York, NY 10018
+          - generic [ref=f2e552]: +1 (800) 555-MXMOBILZ / +1 (212) 555-0199
+          - generic [ref=f2e556]: support@mxmobilz.com
+      - generic [ref=f2e561]:
+        - heading "Shop Mobiles" [level=3] [ref=f2e562]
+        - list [ref=f2e563]:
+          - listitem [ref=f2e564]:
+            - button "Apple iPhone 16 Series" [ref=f2e565] [cursor=pointer]
+          - listitem [ref=f2e566]:
+            - button "Samsung Galaxy S25 Ultra" [ref=f2e567] [cursor=pointer]
+          - listitem [ref=f2e568]:
+            - button "Google Pixel 9 Pro XL" [ref=f2e569] [cursor=pointer]
+          - listitem [ref=f2e570]:
+            - button "OnePlus 13 5G" [ref=f2e571] [cursor=pointer]
+          - listitem [ref=f2e572]:
+            - button "Nothing Phone (2a) Plus" [ref=f2e573] [cursor=pointer]
+          - listitem [ref=f2e574]:
+            - button "Certified Refurbished" [ref=f2e575] [cursor=pointer]
+      - generic [ref=f2e576]:
+        - heading "Services & Support" [level=3] [ref=f2e577]
+        - list [ref=f2e578]:
+          - listitem [ref=f2e579]:
+            - button "Trade-In Estimator" [ref=f2e580] [cursor=pointer]
+          - listitem [ref=f2e581]:
+            - button "Phone Specs Comparison" [ref=f2e582] [cursor=pointer]
+          - listitem [ref=f2e583]:
+            - button "Contact Store & Locations" [ref=f2e584] [cursor=pointer]
+          - listitem [ref=f2e585]:
+            - button "Privacy Policy & Terms" [ref=f2e586] [cursor=pointer]
+          - listitem [ref=f2e587]:
+            - button "Admin Management Portal" [ref=f2e588] [cursor=pointer]
+      - generic [ref=f2e589]:
+        - heading "Get $50 Off Coupon" [level=3] [ref=f2e590]
+        - paragraph [ref=f2e591]: Subscribe to Mxmobilz VIP newsletter to get an instant $50 promo code for your first purchase.
+        - generic [ref=f2e592]:
+          - generic [ref=f2e593]:
+            - textbox "Enter your email" [ref=f2e594]
+            - button [ref=f2e595] [cursor=pointer]
+          - paragraph [ref=f2e599]: We respect your privacy. Unsubscribe anytime.
+        - generic [ref=f2e600]:
+          - paragraph [ref=f2e601]: Encrypted Checkout
+          - generic [ref=f2e605]:
+            - generic [ref=f2e606]: VISA
+            - generic [ref=f2e607]: Mastercard
+            - generic [ref=f2e608]: Apple Pay
+            - generic [ref=f2e609]: Google Pay
+    - generic [ref=f2e611]:
+      - paragraph [ref=f2e612]: © 2026 Mxmobilz Inc. All rights reserved. Premium Authorized Mobile Retailer.
+      - generic [ref=f2e613]:
+        - button "Privacy Policy" [ref=f2e614]
+        - button "Terms of Service" [ref=f2e615]
+        - button "Store Support" [ref=f2e616]

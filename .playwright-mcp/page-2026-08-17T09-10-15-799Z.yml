@@ -1,0 +1,193 @@
+- generic [ref=f5e3]:
+  - banner [ref=f5e4]:
+    - generic [ref=f5e5]:
+      - generic [ref=f5e6]:
+        - generic [ref=f5e7]: 100% Genuine Mobile Guarantee
+        - generic [ref=f5e11]: Free 30-Day Express Returns
+      - generic [ref=f5e17]:
+        - generic [ref=f5e18]: OFFER
+        - generic [ref=f5e19]: Get up to $800 Trade-In Credit on iPhone 16 & Galaxy S25!
+        - button "Calculate" [ref=f5e20] [cursor=pointer]
+    - generic [ref=f5e21]:
+      - generic [ref=f5e22]:
+        - generic [ref=f5e29] [cursor=pointer]:
+          - generic [ref=f5e30]:
+            - generic [ref=f5e31]: Mxmobilz
+            - generic [ref=f5e32]: PRO
+          - paragraph [ref=f5e33]: iPhone & Android Flagship Store
+        - textbox "Search iPhone 16 Pro, Galaxy S25, Pixel 9..." [ref=f5e36]
+        - generic [ref=f5e40]:
+          - button "Admin Panel" [ref=f5e41] [cursor=pointer]
+          - button "View Shopping Cart" [ref=f5e45] [cursor=pointer]:
+            - generic [ref=f5e49]: Cart
+            - generic [ref=f5e583]: "1"
+          - button [ref=f5e50] [cursor=pointer]
+      - generic [ref=f5e52]:
+        - generic [ref=f5e53]:
+          - generic [ref=f5e54]: "Quick Brands:"
+          - button "iPhone" [ref=f5e55] [cursor=pointer]
+          - button "Samsung Galaxy" [ref=f5e59] [cursor=pointer]
+          - button "Google Pixel" [ref=f5e60] [cursor=pointer]
+          - button "OnePlus" [ref=f5e61] [cursor=pointer]
+          - button "Nothing Phone" [ref=f5e62] [cursor=pointer]
+        - generic [ref=f5e63]: 0% APR Financing Available
+  - main [ref=f5e68]:
+    - generic [ref=f5e637]:
+      - button "Back to Mobile Shop" [ref=f5e638] [cursor=pointer]
+      - heading "Secure Mobile Checkout" [level=1] [ref=f5e641]
+      - generic [ref=f5e642]:
+        - generic [ref=f5e643]:
+          - generic [ref=f5e644]:
+            - heading "1. Contact & Express Shipping Address" [level=3] [ref=f5e645]
+            - generic [ref=f5e649]:
+              - generic [ref=f5e650]:
+                - generic [ref=f5e651]: Full Legal Name
+                - textbox [ref=f5e652]: David Miller
+              - generic [ref=f5e653]:
+                - generic [ref=f5e654]: Email Address
+                - textbox [ref=f5e655]: david.miller@techmail.com
+              - generic [ref=f5e656]:
+                - generic [ref=f5e657]: Phone (Order Updates)
+                - textbox [ref=f5e658]: +1 (555) 342-1098
+              - generic [ref=f5e659]:
+                - generic [ref=f5e660]: Street Address
+                - textbox [ref=f5e661]: 742 Evergreen Terrace
+              - generic [ref=f5e662]:
+                - generic [ref=f5e663]: City
+                - textbox [ref=f5e664]: Springfield
+              - generic [ref=f5e665]:
+                - generic [ref=f5e666]: State / Zip Code
+                - generic [ref=f5e667]:
+                  - textbox [ref=f5e668]: IL
+                  - textbox [ref=f5e669]: "62704"
+          - generic [ref=f5e670]:
+            - heading "2. Select Dispatch Delivery Speed" [level=3] [ref=f5e671]
+            - generic [ref=f5e677]:
+              - generic [ref=f5e678] [cursor=pointer]:
+                - generic [ref=f5e679]:
+                  - radio "Mxmobilz 24h Express Air Courier 1-2 Business Days $0 Free" [checked] [ref=f5e680]
+                  - generic [ref=f5e681]:
+                    - generic [ref=f5e682]: Mxmobilz 24h Express Air Courier
+                    - generic [ref=f5e683]: 1-2 Business Days
+                - generic [ref=f5e684]: $0 Free
+              - generic [ref=f5e685] [cursor=pointer]:
+                - generic [ref=f5e686]:
+                  - radio "VIP Priority Overnight Delivery Next Day Morning +$25" [ref=f5e687]
+                  - generic [ref=f5e688]:
+                    - generic [ref=f5e689]: VIP Priority Overnight Delivery
+                    - generic [ref=f5e690]: Next Day Morning
+                - generic [ref=f5e691]: +$25
+          - generic [ref=f5e692]:
+            - heading "3. Encrypted Payment Details" [level=3] [ref=f5e693]
+            - generic [ref=f5e697]:
+              - button "Credit/Debit Card" [ref=f5e698] [cursor=pointer]
+              - button "Apple Pay" [ref=f5e699] [cursor=pointer]
+              - button "Google Pay" [ref=f5e700] [cursor=pointer]
+              - button "Cash on Delivery" [ref=f5e701] [cursor=pointer]
+            - generic [ref=f5e702]:
+              - generic [ref=f5e703]:
+                - generic [ref=f5e704]: Card Number
+                - textbox [ref=f5e705]: 4532 •••• •••• 8892
+              - generic [ref=f5e706]:
+                - generic [ref=f5e707]:
+                  - generic [ref=f5e708]: Expiry Date
+                  - textbox [ref=f5e709]: 08/29
+                - generic [ref=f5e710]:
+                  - generic [ref=f5e711]: CVV Security
+                  - textbox [ref=f5e712]: "892"
+          - button "Pay $1403 & Place Mobile Order" [ref=f5e713] [cursor=pointer]
+        - generic [ref=f5e718]:
+          - heading "Order Summary (1)" [level=3] [ref=f5e719]
+          - generic [ref=f5e721]:
+            - img "Apple iPhone 16 Pro Max" [ref=f5e722]
+            - generic [ref=f5e723]:
+              - generic [ref=f5e724]: Apple iPhone 16 Pro Max
+              - generic [ref=f5e725]: 256GB • Desert Titanium
+            - generic [ref=f5e726]: $1199
+          - generic [ref=f5e727]:
+            - generic [ref=f5e728]:
+              - generic [ref=f5e729]: "Items Subtotal:"
+              - generic [ref=f5e730]: $1299
+            - generic [ref=f5e731]:
+              - generic [ref=f5e732]: "Shipping:"
+              - generic [ref=f5e733]: FREE
+            - generic [ref=f5e734]:
+              - generic [ref=f5e735]: "Estimated Sales Tax:"
+              - generic [ref=f5e736]: $104
+            - generic [ref=f5e737]:
+              - generic [ref=f5e738]: "Total Due Today:"
+              - generic [ref=f5e739]: $1403
+          - generic [ref=f5e740]:
+            - generic [ref=f5e741]: 100% Genuine Mobile Guarantee
+            - paragraph [ref=f5e745]: Every phone is double-checked and shipped in factory sealed box with 1-Year official warranty.
+  - contentinfo [ref=f5e379]:
+    - generic [ref=f5e381]:
+      - generic [ref=f5e389]:
+        - heading "Free Express Shipping" [level=4] [ref=f5e390]
+        - paragraph [ref=f5e391]: On all flagship orders over $499
+      - generic [ref=f5e397]:
+        - heading "1-Year Official Warranty" [level=4] [ref=f5e398]
+        - paragraph [ref=f5e399]: 100% genuine original devices
+      - generic [ref=f5e405]:
+        - heading "30-Day Money Back" [level=4] [ref=f5e406]
+        - paragraph [ref=f5e407]: Hassle-free return & replacement
+      - generic [ref=f5e412]:
+        - heading "24/7 Mobile Specialists" [level=4] [ref=f5e413]
+        - paragraph [ref=f5e414]: Live expert consultation
+    - generic [ref=f5e415]:
+      - generic [ref=f5e416]:
+        - generic [ref=f5e417] [cursor=pointer]: Mxmobilz
+        - paragraph [ref=f5e422]: Mxmobilz is the premier authorized digital destination for authentic Apple iPhones, Samsung Galaxy flagships, Google Pixel, and high-performance Android devices with trade-in guarantee and express dispatch.
+        - generic [ref=f5e423]:
+          - generic [ref=f5e424]: 450 Fifth Avenue, Midtown Tech District, New York, NY 10018
+          - generic [ref=f5e429]: +1 (800) 555-MXMOBILZ / +1 (212) 555-0199
+          - generic [ref=f5e433]: support@mxmobilz.com
+      - generic [ref=f5e438]:
+        - heading "Shop Mobiles" [level=3] [ref=f5e439]
+        - list [ref=f5e440]:
+          - listitem [ref=f5e441]:
+            - button "Apple iPhone 16 Series" [ref=f5e442] [cursor=pointer]
+          - listitem [ref=f5e443]:
+            - button "Samsung Galaxy S25 Ultra" [ref=f5e444] [cursor=pointer]
+          - listitem [ref=f5e445]:
+            - button "Google Pixel 9 Pro XL" [ref=f5e446] [cursor=pointer]
+          - listitem [ref=f5e447]:
+            - button "OnePlus 13 5G" [ref=f5e448] [cursor=pointer]
+          - listitem [ref=f5e449]:
+            - button "Nothing Phone (2a) Plus" [ref=f5e450] [cursor=pointer]
+          - listitem [ref=f5e451]:
+            - button "Certified Refurbished" [ref=f5e452] [cursor=pointer]
+      - generic [ref=f5e453]:
+        - heading "Services & Support" [level=3] [ref=f5e454]
+        - list [ref=f5e455]:
+          - listitem [ref=f5e456]:
+            - button "Trade-In Estimator" [ref=f5e457] [cursor=pointer]
+          - listitem [ref=f5e458]:
+            - button "Phone Specs Comparison" [ref=f5e459] [cursor=pointer]
+          - listitem [ref=f5e460]:
+            - button "Contact Store & Locations" [ref=f5e461] [cursor=pointer]
+          - listitem [ref=f5e462]:
+            - button "Privacy Policy & Terms" [ref=f5e463] [cursor=pointer]
+          - listitem [ref=f5e464]:
+            - button "Admin Management Portal" [ref=f5e465] [cursor=pointer]
+      - generic [ref=f5e466]:
+        - heading "Get $50 Off Coupon" [level=3] [ref=f5e467]
+        - paragraph [ref=f5e468]: Subscribe to Mxmobilz VIP newsletter to get an instant $50 promo code for your first purchase.
+        - generic [ref=f5e469]:
+          - generic [ref=f5e470]:
+            - textbox "Enter your email" [ref=f5e471]
+            - button [ref=f5e472] [cursor=pointer]
+          - paragraph [ref=f5e476]: We respect your privacy. Unsubscribe anytime.
+        - generic [ref=f5e477]:
+          - paragraph [ref=f5e478]: Encrypted Checkout
+          - generic [ref=f5e482]:
+            - generic [ref=f5e483]: VISA
+            - generic [ref=f5e484]: Mastercard
+            - generic [ref=f5e485]: Apple Pay
+            - generic [ref=f5e486]: Google Pay
+    - generic [ref=f5e488]:
+      - paragraph [ref=f5e489]: © 2026 Mxmobilz Inc. All rights reserved. Premium Authorized Mobile Retailer.
+      - generic [ref=f5e490]:
+        - button "Privacy Policy" [ref=f5e491]
+        - button "Terms of Service" [ref=f5e492]
+        - button "Store Support" [ref=f5e493]

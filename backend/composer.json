@@ -1,21 +1,19 @@
 {
     "$schema": "https://getcomposer.org/schema.json",
-    "name": "laravel/react-starter-kit",
+    "name": "mxmobilz/api",
     "type": "project",
-    "description": "The skeleton application for the Laravel framework.",
+    "description": "Mxmobilz — Pure JSON API backend for the React storefront.",
     "keywords": [
         "laravel",
-        "framework"
+        "api"
     ],
     "license": "MIT",
     "require": {
         "php": "^8.3",
-        "inertiajs/inertia-laravel": "^3.0",
-        "laravel/chisel": "^0.1.0",
-        "laravel/fortify": "^1.37.2",
         "laravel/framework": "^13.17",
+        "laravel/sanctum": "^4.3",
         "laravel/tinker": "^3.0",
-        "laravel/wayfinder": "^0.1.14"
+        "stripe/stripe-php": "^21.2"
     },
     "require-dev": {
         "fakerphp/faker": "^1.24",
@@ -45,26 +43,17 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
-            "@php artisan migrate --force",
-            "npm install",
-            "npm run build"
+            "@php artisan migrate --force"
         ],
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "@php artisan dev"
+            "@php artisan serve"
         ],
         "lint": [
             "pint --parallel"
         ],
         "lint:check": [
             "pint --parallel --test"
-        ],
-        "ci:check": [
-            "Composer\\Config::disableProcessTimeout",
-            "npm run lint:check",
-            "npm run format:check",
-            "npm run types:check",
-            "@test"
         ],
         "types:check": [
             "phpstan analyse"
@@ -79,10 +68,6 @@
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
         ],
-        "post-update-cmd": [
-            "@php artisan install:features --ansi",
-            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
-        ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
         ],
@@ -90,9 +75,6 @@
             "@php artisan key:generate --ansi",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
             "@php artisan migrate --graceful --ansi"
-        ],
-        "pre-package-uninstall": [
-            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
         ]
     },
     "extra": {
@@ -109,11 +91,37 @@
         "optimize-autoloader": true,
         "preferred-install": "dist",
         "sort-packages": true,
+        "platform": {
+            "php": "8.3.14"
+        },
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "conflict": {
+        "symfony/clock": ">=8.0",
+        "symfony/console": ">=8.0",
+        "symfony/css-selector": ">=8.0",
+        "symfony/error-handler": ">=8.0",
+        "symfony/event-dispatcher": ">=8.0",
+        "symfony/finder": ">=8.0",
+        "symfony/http-foundation": ">=8.0",
+        "symfony/http-kernel": ">=8.0",
+        "symfony/mailer": ">=8.0",
+        "symfony/mime": ">=8.0",
+        "symfony/process": ">=8.0",
+        "symfony/property-access": ">=8.0",
+        "symfony/property-info": ">=8.0",
+        "symfony/routing": ">=8.0",
+        "symfony/serializer": ">=8.0",
+        "symfony/string": ">=8.0",
+        "symfony/translation": ">=8.0",
+        "symfony/type-info": ">=8.0",
+        "symfony/uid": ">=8.0",
+        "symfony/var-dumper": ">=8.0",
+        "symfony/yaml": ">=8.0"
+    }
 }

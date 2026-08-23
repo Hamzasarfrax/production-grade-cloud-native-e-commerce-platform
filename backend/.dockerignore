@@ -1,14 +1,47 @@
-vendor
-node_modules
+# Composer dependencies
+vendor/
+
+# Node dependencies
+node_modules/
+
+# Environment files and secrets
 .env
+.env.*
+!.env.example
+
+# Laravel generated files
 storage/*.key
 storage/logs/*
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
 storage/framework/testing/*
-.git
-.github
+
+# Stale package caches (host ke purane caches image me na ghusen —
+# Laravel runtime par khud regenerate kar leta hai)
+bootstrap/cache/*.php
+
+# Git
+.git/
+.github/
+
+# Local database
 database/database.sqlite
-tests
-.idea
+
+# Tests
+tests/
+
+# IDE / editor files
+.idea/
+.vscode/
+
+# Docker Compose files
+docker-compose.yml
+compose.yml
+
+# Documentation
+README.md
+
+# OS files
+.DS_Store
+Thumbs.db
