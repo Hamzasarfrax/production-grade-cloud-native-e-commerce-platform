@@ -65,7 +65,16 @@
       (dono images alag repos me `docker.io/<user>/mxmobilz-{api,web}:<sha>` tag/push) add.
 - [ ] README/docs — deployment/runbook/security/troubleshooting abhi bhi pending.
 - [ ] Auth (Laravel Sanctum) for protected admin + `/api` — pending.
-- [ ] K8s + ArgoCD manifests fill (folders exist, empty) — pending.
+- [x] K8s PRODUCTION-SETUP LIVE (2026-08-27): 3-node Kind cluster `mxmobilz-prod`
+      (control-plane + 2 workers), namespace `cloud-native-ecomerce-app`. MySQL
+      StatefulSet+PVC(headless svc, secret `mysql-app-secret`), Backend Helm chart
+      (nginx sidecar :8000 + PHP-FPM :9000 + init app-copy, probes `/api/products`,
+      env DB from secret), Frontend 2 replicas (BACKEND_URL=backend-backend-helm:8000),
+      ingress-nginx controller + `ingress.yaml` (host mxmobilz.local, / -> frontend,
+      /api -> backend-backend-helm). LIVE VERIFIED: /api/products 200 full-stack
+      (nginx->fpm->Laravel->MySQL). Docs: `docs/k8s-production-setup.md` (source of
+      truth, WHAT/WHY/VERIFY/ALTERNATIVE + honest level assessment).
+      (ArgoCD abhi khaali/pending.)
 
 ## Decisions / Facts
 
@@ -105,7 +114,10 @@ Response shape: `{ "ok": true, "data": ... }`.
 ## Next Steps (todo)
 
 1. Auth — Laravel Sanctum (login/register) for protected admin + `/api` routes.
-2. Fill K8s + ArgoCD manifests (folders `k8s/`, `argocd/` exist but empty).
+2. K8s core setup DONE (kind multi-node, MySQL StatefulSet, backend Helm+sidecar,
+   frontend, ingress). Baki: ArgoCD GitOps pipeline (folders `argocd/` khali),
+   plus production hardening (NetworkPolicy, TLS, HPA enable, Prometheus,
+   metrics-server, runAsNonRoot, backup job).
 3. Docs: deployment.md, runbook.md, security.md, disaster-recovery.md, troubleshooting.md.
 4. Admin: product edit UI + promos management tab (API methods already exist in `src/api.ts`).
 

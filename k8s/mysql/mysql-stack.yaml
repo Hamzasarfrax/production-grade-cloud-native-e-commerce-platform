@@ -6,11 +6,13 @@ metadata:
   labels:
     app: mysql
 spec:
+  # Headless service — StatefulSet ke pods ko stable DNS deta hai
+  # mysql-0.mysql.namespace.svc.cluster.local
+  clusterIP: None
   ports:
     - port: 3306
       targetPort: 3306
       name: mysql
-  clusterIP: None
   selector:
     app: mysql
 ---
@@ -19,9 +21,12 @@ kind: StatefulSet
 metadata:
   name: mysql
   namespace: cloud-native-ecomerce-app
+  labels:
+    app: mysql
 spec:
   serviceName: mysql
   replicas: 1
+  podManagementPolicy: OrderedReady
   selector:
     matchLabels:
       app: mysql
@@ -30,9 +35,11 @@ spec:
       labels:
         app: mysql
     spec:
+      terminationGracePeriodSeconds: 30
       containers:
         - name: mysql
           image: mysql:8.0
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3306
               name: mysql
@@ -43,9 +50,15 @@ spec:
                   name: mysql-app-secret
                   key: mysql-root-password
             - name: MYSQL_DATABASE
-              value: ecommerce
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-app-secret
+                  key: mysql-database
             - name: MYSQL_USER
-              value: ecommerce
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-app-secret
+                  key: mysql-username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -58,9 +71,7 @@ spec:
             limits:
               cpu: 500m
               memory: 512Mi
-          volumeMounts:
-            - name: mysql-data
-              mountPath: /var/lib/mysql
+          # Readiness — traffic tabhi bhejo jab mysql ready ho
           readinessProbe:
             exec:
               command:
@@ -70,6 +81,9 @@ spec:
                 - localhost
             initialDelaySeconds: 10
             periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 3
+          # Liveness — agar mysql crash ho to restart
           livenessProbe:
             exec:
               command:
@@ -79,11 +93,20 @@ spec:
                 - localhost
             initialDelaySeconds: 30
             periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+      securityContext:
+        fsGroup: 999
+  # Persistent storage — pod delete hone pe bhi data safe
   volumeClaimTemplates:
     - metadata:
-        name: mysql-data
+        name: data
       spec:
         accessModes: ["ReadWriteOnce"]
+        storageClassName: standard
         resources:
           requests:
             storage: 5Gi
