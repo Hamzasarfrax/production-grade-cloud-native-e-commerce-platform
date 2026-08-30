@@ -1,10 +1,10 @@
 
 
-
 helm install monitoring \
   prometheus-community/kube-prometheus-stack \
   -n monitoring \
   --create-namespace
+
 
   kubectl get pods -n monitoring
 
@@ -18,7 +18,7 @@ kubectl port-forward \
   3000:80 \
   -n monitoring
 
-Then:
+Then ":
 
 http://localhost:3000
 
