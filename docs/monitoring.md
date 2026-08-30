@@ -19,7 +19,7 @@ kubectl port-forward \
   -n monitoring
 
 Then ":
-
+  
 http://localhost:3000
 
 Grafana ke andar Prometheus datasource usually Helm stack ke through configure ho jata hai.
