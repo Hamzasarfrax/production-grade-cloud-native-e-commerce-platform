@@ -1,0 +1,88 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: mxmobilz
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-options: PruneLast=true
+spec:
+  description: Mxmobilz E-commerce Project - Production GitOps
+  sourceRepos:
+  - 'https://github.com/Hamzasarfrax/production-grade-cloud-native-e-commerce-platform'
+  destinations:
+  - namespace: 'cloud-native-ecomerce-app'
+    server: https://kubernetes.default.svc
+  - namespace: 'cloud-native-ecomerce-dev'
+    server: https://kubernetes.default.svc
+  - namespace: 'cloud-native-ecomerce-staging'
+    server: https://kubernetes.default.svc
+  - namespace: 'cloud-native-ecomerce-prod'
+    server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+  - group: ''
+    kind: Namespace
+  namespaceResourceWhitelist:
+  - group: ''
+    kind: '*'
+  - group: apps
+    kind: Deployment
+  - group: apps
+    kind: StatefulSet
+  - group: apps
+    kind: ReplicaSet
+  - group: ''
+    kind: Service
+  - group: ''
+    kind: Secret
+  - group: ''
+    kind: ConfigMap
+  - group: ''
+    kind: PersistentVolumeClaim
+  - group: networking.k8s.io
+    kind: Ingress
+  - group: networking.k8s.io
+    kind: NetworkPolicy
+  - group: autoscaling
+    kind: HorizontalPodAutoscaler
+  - group: policy
+    kind: PodDisruptionBudget
+  - group: external-secrets.io
+    kind: ExternalSecret
+  - group: external-secrets.io
+    kind: SecretStore
+  - group: external-secrets.io
+    kind: ClusterSecretStore
+  roles:
+  - name: admin
+    description: Full admin access to mxmobilz project
+    policies:
+    - p, proj:mxmobilz:admin, applications, *, mxmobilz/*, allow
+    - p, proj:mxmobilz:admin, repositories, *, *, allow
+    - p, proj:mxmobilz:admin, clusters, *, *, allow
+    - p, proj:mxmobilz:admin, projects, *, mxmobilz, allow
+    groups:
+    - mxmobilz-admins
+  - name: developer
+    description: Read/write access to dev/staging environments
+    policies:
+    - p, proj:mxmobilz:developer, applications, get, mxmobilz/*, allow
+    - p, proj:mxmobilz:developer, applications, sync, mxmobilz/*, allow
+    - p, proj:mxmobilz:developer, applications, override, mxmobilz/*, allow
+    - p, proj:mxmobilz:developer, repositories, get, *, allow
+    groups:
+    - mxmobilz-developers
+  - name: viewer
+    description: Read-only access to all environments
+    policies:
+    - p, proj:mxmobilz:viewer, applications, get, mxmobilz/*, allow
+    - p, proj:mxmobilz:viewer, repositories, get, *, allow
+    groups:
+    - mxmobilz-viewers
+  - name: ci-cd
+    description: CI/CD pipeline service account for automated deployments
+    policies:
+    - p, proj:mxmobilz:ci-cd, applications, sync, mxmobilz/*, allow
+    - p, proj:mxmobilz:ci-cd, applications, get, mxmobilz/*, allow
+    - p, proj:mxmobilz:ci-cd, repositories, get, *, allow
+    groups:
+    - mxmobilz-ci-cd

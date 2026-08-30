@@ -1,0 +1,63 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base
+
+namespace: cloud-native-ecomerce-staging
+
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: backend-backend-helm
+    spec:
+      replicas: 2
+  target:
+    kind: Deployment
+    labelSelector: app.kubernetes.io/name=backend
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: frontend-deployment
+    spec:
+      replicas: 2
+  target:
+    kind: Deployment
+    labelSelector: app=frontend-app
+- patch: |-
+    apiVersion: apps/v1
+    kind: StatefulSet
+    metadata:
+      name: mysql
+    spec:
+      replicas: 1
+  target:
+    kind: StatefulSet
+    labelSelector: app=mysql
+- patch: |-
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: mysql-app-secret
+    type: Opaque
+    stringData:
+      mysql-root-password: staging-root-password
+      mysql-password: staging-ecommerce-password
+      mysql-database: ecommerce_staging
+      mysql-username: ecommerce_staging
+  target:
+    kind: Secret
+    name: mysql-app-secret
+
+configMapGenerator:
+- name: env-config
+  behavior: merge
+  literals:
+  - ENVIRONMENT=staging
+  - LOG_LEVEL=info
+
+commonLabels:
+  environment: staging
