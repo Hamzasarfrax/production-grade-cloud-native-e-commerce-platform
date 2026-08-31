@@ -11,22 +11,22 @@ patches:
     apiVersion: apps/v1
     kind: Deployment
     metadata:
-      name: backend-backend-helm
+      name: backend
     spec:
       replicas: 2
   target:
     kind: Deployment
-    labelSelector: app.kubernetes.io/name=backend
+    labelSelector: app=backend
 - patch: |-
     apiVersion: apps/v1
     kind: Deployment
     metadata:
-      name: frontend-deployment
+      name: frontend
     spec:
       replicas: 2
   target:
     kind: Deployment
-    labelSelector: app=frontend-app
+    labelSelector: app=frontend
 - patch: |-
     apiVersion: apps/v1
     kind: StatefulSet
@@ -41,7 +41,7 @@ patches:
     apiVersion: v1
     kind: Secret
     metadata:
-      name: mysql-app-secret
+      name: mysql-secret
     type: Opaque
     stringData:
       mysql-root-password: staging-root-password
@@ -50,7 +50,7 @@ patches:
       mysql-username: ecommerce_staging
   target:
     kind: Secret
-    name: mysql-app-secret
+    name: mysql-secret
 
 configMapGenerator:
 - name: env-config

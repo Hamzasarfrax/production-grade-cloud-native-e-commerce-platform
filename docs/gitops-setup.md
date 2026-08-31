@@ -212,6 +212,13 @@ commonLabels:
   app.kubernetes.io/managed-by: argocd
 ```
 
+**⚠️ Important:** All subdirectories under `gitops/base/` **must be tracked in git**. If any directory (e.g., `backend/`) is untracked, ArgoCD/kustomize will fail with:
+```
+lstat <path>/gitops/base/backend: no such file or directory
+Error: accumulating resources from 'backend': evalsymlink failure
+```
+**Fix:** Ensure `gitops/base/backend/` (and all subfolders) are committed to the repository. See the "Troubleshooting" section below.
+
 **All environments inherit this base.** Overlays only patch what's different.
 
 ### 5.2 Overlay Examples
@@ -476,6 +483,7 @@ argocd app sync mxmobilz-prod --prune --force
 8. **Network Policies** — zero-trust pod communication
 9. **Git as source of truth** — all changes via PR, audit trail in Git history
 10. **Rollback = git revert** — no manual cluster operations
+11. **⚠️ All base subdirectories must be git-tracked** — untracked folders (e.g., `gitops/base/backend/`) cause `lstat: no such file or directory` errors in ArgoCD. Always `git add` new Kustomize components before deploying.
 
 ---
 

@@ -89,7 +89,7 @@ kubectl get pods -n argocd
 
 ### Option A: Port-Forward (Quick, Local Only)
 ```bash
-kubectl port-forward -n argocd svc/argocd-server 8080:443
+kubectl port-forward -n argocd svc/argocd-server 8080:443 &
 # Open browser: https://localhost:8080
 # Accept self-signed cert warning
 ```

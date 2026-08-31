@@ -53,22 +53,22 @@ spec:
             - name: MYSQL_ROOT_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysql-app-secret
+                  name: mysql-secret
                   key: mysql-root-password
             - name: MYSQL_DATABASE
               valueFrom:
                 secretKeyRef:
-                  name: mysql-app-secret
+                  name: mysql-secret
                   key: mysql-database
             - name: MYSQL_USER
               valueFrom:
                 secretKeyRef:
-                  name: mysql-app-secret
+                  name: mysql-secret
                   key: mysql-username
             - name: MYSQL_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: mysql-app-secret
+                  name: mysql-secret
                   key: mysql-password
           resources:
             requests:
