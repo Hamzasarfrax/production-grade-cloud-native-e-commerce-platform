@@ -1,0 +1,84 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+- ../../base
+
+namespace: cloud-native-ecomerce-prod
+
+patches:
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: backend-backend-helm
+    spec:
+      replicas: 5
+  target:
+    kind: Deployment
+    labelSelector: app.kubernetes.io/name=backend
+- patch: |-
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: frontend-deployment
+    spec:
+      replicas: 3
+  target:
+    kind: Deployment
+    labelSelector: app=frontend-app
+- patch: |-
+    apiVersion: apps/v1
+    kind: StatefulSet
+    metadata:
+      name: mysql
+    spec:
+      replicas: 1
+  target:
+    kind: StatefulSet
+    labelSelector: app=mysql
+- patch: |-
+    apiVersion: v1
+    kind: Secret
+    metadata:
+      name: mysql-app-secret
+    type: Opaque
+    stringData:
+      mysql-root-password: CHANGE_ME_PROD_ROOT_PASSWORD
+      mysql-password: CHANGE_ME_PROD_PASSWORD
+      mysql-database: ecommerce_prod
+      mysql-username: ecommerce_prod
+  target:
+    kind: Secret
+    name: mysql-app-secret
+- patch: |-
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: frontend-service
+    spec:
+      type: ClusterIP
+  target:
+    kind: Service
+    name: frontend-service
+- patch: |-
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: backend-backend-helm
+    spec:
+      type: ClusterIP
+  target:
+    kind: Service
+    name: backend-backend-helm
+
+configMapGenerator:
+- name: env-config
+  behavior: create
+  literals:
+  - ENVIRONMENT=production
+  - LOG_LEVEL=warn
+
+labels:
+  - pairs:
+      environment: prod
