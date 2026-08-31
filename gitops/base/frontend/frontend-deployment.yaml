@@ -1,59 +1,109 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: frontend-deployment
-  namespace: cloud-native-ecomerce-app
+  name: frontend
   labels:
-    app: frontend-app
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: mxmobilz
+    app.kubernetes.io/component: frontend
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: frontend-app
+      app.kubernetes.io/name: frontend
   template:
     metadata:
       labels:
-        app: frontend-app
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/part-of: mxmobilz
+        app.kubernetes.io/component: frontend
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
-        - name: frontend-app
+        - name: frontend
           image: hamzasarfraz862/front-end-app:1.0.0
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 80
+              protocol: TCP
           env:
             - name: BACKEND_URL
               value: "http://backend-backend-helm:8000"
           resources:
             requests:
-              memory: "64Mi"
-              cpu: "100m"
+              cpu: 100m
+              memory: 64Mi
             limits:
-              memory: "128Mi"
-              cpu: "250m"
+              cpu: 500m
+              memory: 128Mi
           readinessProbe:
             httpGet:
               path: /
-              port: 80
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
           livenessProbe:
             httpGet:
               path: /
-              port: 80
+              port: http
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+              - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: var-cache
+              mountPath: /var/cache/nginx
+      volumes:
+        - name: tmp
+          emptyDir:
+            medium: Memory
+        - name: var-cache
+          emptyDir: {}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - frontend
+              topologyKey: kubernetes.io/hostname
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: frontend-service
-  namespace: cloud-native-ecomerce-app
+  name: frontend
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/part-of: mxmobilz
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - port: 80
-      targetPort: 80
-      nodePort: 30080
+      targetPort: http
       protocol: TCP
+      name: http
   selector:
-    app: frontend-app
+    app.kubernetes.io/name: frontend

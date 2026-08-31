@@ -1,22 +1,32 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: namespace
+  name: mxmobilz-prod
   namespace: argocd
   finalizers:
   - resources-finalizer.argocd.argoproj.io
+  annotations:
+    argocd.argoproj.io/sync-wave: "20"
 spec:
   project: mxmobilz
   source:
     repoURL: 'https://github.com/Hamzasarfrax/production-grade-cloud-native-e-commerce-platform'
     targetRevision: main
-    path: gitops/base
+    path: gitops/overlays/prod
   destination:
     server: https://kubernetes.default.svc
-    namespace: cloud-native-ecomerce-app
+    namespace: cloud-native-ecomerce-prod
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
     syncOptions:
     - CreateNamespace=true
+    - PruneLast=true
+    - RespectIgnoreDifferences=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

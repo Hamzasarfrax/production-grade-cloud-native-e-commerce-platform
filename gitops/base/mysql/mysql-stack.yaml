@@ -2,40 +2,46 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mysql
-  namespace: cloud-native-ecomerce-app
   labels:
-    app: mysql
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/part-of: mxmobilz
+    app.kubernetes.io/component: database
 spec:
-  # Headless service — StatefulSet ke pods ko stable DNS deta hai
-  # mysql-0.mysql.namespace.svc.cluster.local
   clusterIP: None
   ports:
     - port: 3306
       targetPort: 3306
       name: mysql
   selector:
-    app: mysql
+    app.kubernetes.io/name: mysql
 ---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mysql
-  namespace: cloud-native-ecomerce-app
   labels:
-    app: mysql
+    app.kubernetes.io/name: mysql
+    app.kubernetes.io/part-of: mxmobilz
+    app.kubernetes.io/component: database
 spec:
   serviceName: mysql
   replicas: 1
   podManagementPolicy: OrderedReady
   selector:
     matchLabels:
-      app: mysql
+      app.kubernetes.io/name: mysql
   template:
     metadata:
       labels:
-        app: mysql
+        app.kubernetes.io/name: mysql
+        app.kubernetes.io/part-of: mxmobilz
+        app.kubernetes.io/component: database
     spec:
       terminationGracePeriodSeconds: 30
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+        runAsGroup: 999
       containers:
         - name: mysql
           image: mysql:8.0
@@ -69,9 +75,8 @@ spec:
               cpu: 250m
               memory: 256Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
-          # Readiness — traffic tabhi bhejo jab mysql ready ho
+              cpu: 1000m
+              memory: 1Gi
           readinessProbe:
             exec:
               command:
@@ -83,7 +88,6 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 5
             failureThreshold: 3
-          # Liveness — agar mysql crash ho to restart
           livenessProbe:
             exec:
               command:
@@ -98,9 +102,14 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /var/lib/mysql
-      securityContext:
-        fsGroup: 999
-  # Persistent storage — pod delete hone pe bhi data safe
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 999
+            runAsGroup: 999
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+              - ALL
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -109,4 +118,4 @@ spec:
         storageClassName: standard
         resources:
           requests:
-            storage: 5Gi
+            storage: 10Gi
