@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    app: backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      initContainers:
+      - name: app-copy
+        image: hamzasarfraz862/backend-app:1.0.0
+        command: ["sh", "-c", "cp -r /var/www/html/. /app-share/ || true"]
+        volumeMounts:
+        - name: html
+          mountPath: /app-share
+      containers:
+      - name: nginx
+        image: nginx:1.27-alpine
+        ports:
+        - containerPort: 8000
+        volumeMounts:
+        - name: nginx-conf
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+        - name: html
+          mountPath: /var/www/html
+      - name: php-fpm
+        image: hamzasarfraz862/backend-app:1.0.0
+        ports:
+        - containerPort: 9000
+        env:
+        - name: DB_CONNECTION
+          value: "mysql"
+        - name: DB_HOST
+          value: "mysql"
+        - name: DB_PORT
+          value: "3306"
+        - name: DB_DATABASE
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-database
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-username
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: mysql-password
+        - name: APP_ENV
+          value: "production"
+        - name: APP_DEBUG
+          value: "false"
+        volumeMounts:
+        - name: html
+          mountPath: /var/www/html
+      volumes:
+      - name: nginx-conf
+        configMap:
+          name: backend-config
+      - name: html
+        emptyDir: {}
