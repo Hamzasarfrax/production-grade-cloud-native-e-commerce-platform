@@ -19,7 +19,7 @@
 | Audit trail: pipeline logs | Audit trail: Git history |
 | Multi-env: separate pipelines | Multi-env: same manifests, different overlays |
 
-**WHY ArgoCD:**
+### WHY ArgoCD:
 - **Pull model** — cluster state always matches Git (no drift)
 - **Declarative** — YAML in Git = desired state
 - **Multi-cluster** — manage dev/staging/prod from one ArgoCD
@@ -80,6 +80,14 @@ gitops/
         └── kustomization.yaml         # replicas=5/3, warn log, prod secrets (CHANGE_ME)
 ```
 
+### ⚠️ CRITICAL: All base subdirectories MUST be tracked in git
+If any directory (e.g., `backend/`) is untracked, ArgoCD/kustomize will fail with:
+```
+lstat <path>/gitops/base/backend: no such file or directory
+Error: accumulating resources from 'backend': evalsymlink failure
+```
+**Fix:** Ensure `gitops/base/backend/` (and all subfolders) are committed to the repository before deploying.
+
 ---
 
 ## 3. ArgoCD Project — `mxmobilz-project.yaml`
@@ -125,6 +133,11 @@ roles:
 ```
 
 **WHY:** Production-grade RBAC — teams get least-privilege access per environment.
+
+**⚠️ Important:** The `mxmobilz-root` application deploys to `namespace: argocd`. Ensure the project whitelists the `argocd` namespace (added `group: ''` `kind: Namespace` to `namespaceResourceWhitelist`), otherwise you'll get:
+```
+InvalidSpecError: Unable to generate manifests — destination server/namespace not allowed
+```
 
 ---
 
@@ -175,8 +188,6 @@ spec:
 
 ### 4.2 Environment Applications
 
-Each env application points to its overlay:
-
 | Application | Path | Namespace | Sync Wave |
 |---|---|---|---|
 | `mxmobilz-dev` | `gitops/overlays/dev` | `cloud-native-ecomerce-dev` | 0 |
@@ -211,13 +222,6 @@ commonLabels:
   app.kubernetes.io/part-of: mxmobilz
   app.kubernetes.io/managed-by: argocd
 ```
-
-**⚠️ Important:** All subdirectories under `gitops/base/` **must be tracked in git**. If any directory (e.g., `backend/`) is untracked, ArgoCD/kustomize will fail with:
-```
-lstat <path>/gitops/base/backend: no such file or directory
-Error: accumulating resources from 'backend': evalsymlink failure
-```
-**Fix:** Ensure `gitops/base/backend/` (and all subfolders) are committed to the repository. See the "Troubleshooting" section below.
 
 **All environments inherit this base.** Overlays only patch what's different.
 
@@ -469,6 +473,13 @@ argocd app sync mxmobilz-prod --prune --force
 # For prod: ensure registry credentials in imagePullSecrets
 ```
 
+### Ingress Webhook Error — `configuration-snippet` denied
+```bash
+# The nginx.ingress.kubernetes.io/configuration-snippet annotation is disabled by the Ingress administrator
+# Remove it from ingress.yaml and use alternative methods for security headers
+# Options: MutatingWebhook, application-level headers, or request cluster admin to enable
+```
+
 ---
 
 ## 13. Key Takeaways (Interview Bullets)
@@ -519,3 +530,220 @@ git push origin main
 git revert HEAD
 git push origin main
 ```
+
+---
+
+## 15. How to Access the Application in Browser
+
+### Option 1: Port-Forward (Local Development)
+```bash
+kubectl port-forward -n argocd svc/argocd-server 8080:443
+# Open: https://localhost:8080
+# Login: user: admin, password: <from step 4 above>
+```
+
+### Option 2: Direct Ingress Access (Production)
+After deploying to prod environment:
+
+```bash
+# Add to /etc/hosts (Windows: C:\Windows\System32\drivers\etc\hosts)
+# 127.0.0.1  mxmobilz.local
+
+# Access:
+# http://mxmobilz.local/          → React store frontend
+# http://mxmobilz.local/api/products → JSON API from backend+DB
+```
+
+**Verify:**
+```bash
+curl -H "Host: mxmobilz.local" http://localhost/api/products
+# Should return JSON response from Laravel API
+```
+
+### Option 3: ArgoCD UI Application Overview
+1. Login to ArgoCD UI
+2. Click any application (mxmobilz-dev, mxmobilz-staging, mxmobilz-prod)
+3. View the **Resources** tree → see all deployed K8s resources
+4. Click **SYNC** → manual sync if automated sync is disabled
+5. View **Sync Details** → see live logs of deployment
+
+### Browser Tabs in ArgoCD UI
+| Tab | What You See |
+|---|---|
+| **Overview** | App status, sync health, resources tree |
+| **Sync** | Sync history, manual sync button, prune options |
+| **Settings** | Namespace, source path, destination, sync policy |
+| **Health** | Pod status, resource health, error details |
+| **Events** | Deployment events, warnings, failures |
+
+---
+
+## 16. Real-World Workflow (End-to-End)
+
+### Day 1: Initial Setup
+```bash
+# 1. Ensure gitops/base/backend/ is tracked
+git add gitops/base/backend/
+git commit -m "feat: add backend kustomization"
+git push origin dev
+
+# 2. Install ArgoCD
+kubectl create namespace argocd
+kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
+# 3. Apply project + apps
+kubectl apply -f gitops/argocd/projects/mxmobilz-project.yaml
+kubectl apply -f gitops/argocd/applications/root-application.yaml
+
+# 4. Wait for auto-sync (or click SYNC)
+# 5. Verify: kubectl get applications -n argocd
+
+# 5. Access UI: kubectl port-forward -n argocd svc/argocd-server 8080:443
+```
+
+### Day 2: Add Feature (e.g., Scale Backend)
+```bash
+# 1. Edit overlay
+vim gitops/overlays/prod/kustomization.yaml
+# Change: backend replicas: 5
+
+# 2. Commit & push
+git add gitops/overlays/prod/kustomization.yaml
+git commit -m "prod: scale backend to 5 replicas"
+git push origin main
+
+# 3. ArgoCD auto-syncs within 3 minutes
+#    OR click SYNC in UI
+
+# 4. Verify deployment
+kubectl get pods -n cloud-native-ecomerce-prod -l app.kubernetes.io/name=backend
+# Should show 5 pods running
+```
+
+### Day 3: Hotfix (Emergency)
+```bash
+# 1. Emergency patch (bypass Git - NOT recommended)
+kubectl patch deployment backend-backend-helm -n cloud-native-ecomerce-prod -p '{"spec":{"replicas":10}}'
+
+# 2. ArgoCD shows "OutOfSync"
+# 3. Next git push will reconcile to previous state
+#    OR click "SYNC" in ArgoCD UI → "Prune"
+
+# 4. Or proper rollback:
+git revert <bad-commit-hash>
+git push origin main
+# ArgoCD auto-syncs to previous state
+```
+
+### Day 4: New Environment (Staging)
+```bash
+# 1. Create overlay
+cp -r gitops/overlays/dev gitops/overlays/staging
+# Edit: change replicas, log level, secrets
+
+# 2. Create application
+cp gitops/argocd/applications/dev-application.yaml gitops/argocd/applications/staging-application.yaml
+# Edit: change path, namespace, sync-wave
+
+# 3. Push to Git
+git add gitops/overlays/staging/ gitops/argocd/applications/staging-application.yaml
+git commit -m "feat: add staging environment"
+git push origin main
+
+# 4. ArgoCD root app auto-discovers
+# 5. Click SYNC on new mxmobilz-staging app
+```
+
+---
+
+## 17. Git Operations (PR-Based Workflow)
+
+### Feature Branch Workflow
+```bash
+# 1. Create feature branch
+git checkout -b feature/add-promo-codes
+
+# 2. Make changes to manifests
+vim gitops/overlays/prod/kustomization.yaml
+# Add: promo code config
+
+# 3. Commit & push
+git add gitops/
+git commit -m "feat: add promo codes overlay"
+git push origin feature/add-promo-codes
+
+# 4. Create Pull Request
+#    - Reviewers check manifest changes
+#    - No direct cluster access needed
+
+# 5. Merge PR
+# 6. ArgoCD auto-syncs merged changes
+
+# 7. Verify
+kubectl get pods -n cloud-native-ecomerce-prod
+```
+
+### Pull Request Template
+```markdown
+## Description
+Add promo codes management to production environment.
+
+## Changes
+- Updated `gitops/overlays/prod/kustomization.yaml` with promo code config
+- Added new ConfigMap for promo code defaults
+
+## Verification
+- [ ] ArgoCD shows synced status (green)
+- [ ] `kubectl get pods` shows correct replica counts
+- [ ] API endpoint `/api/promos` returns expected data
+
+## Rollback Plan
+- `git revert <commit-hash>` if issues found
+- ArgoCD will auto-reconcile to previous state
+```
+
+---
+
+## 18. Level Assessment — Interview Preparation
+
+### Strong Points (Impressive)
+- ✅ Multi-node HA topology (Kind) — single-node nahi
+- ✅ StatefulSet vs Deployment ka **correct** use (DB stable identity + PVC)
+- ✅ Headless service + stable DNS
+- ✅ Secrets via `secretKeyRef`, no plaintext
+- ✅ Probes on real health endpoint (`/api/products`, not `/`)
+- ✅ Kind multi-node = cheap production-like HA locally
+- ✅ Helm chart for backend (parameterized)
+- ✅ nginx sidecar + FPM pattern (real-world PHP deployment)
+- ✅ Ingress L7 routing + ingress-nginx controller
+- ✅ PVC persistence — data survives pod restart
+- ✅ App of Apps pattern with ArgoCD
+- ✅ Kustomize overlays for dev/staging/prod
+- ✅ Git as source of truth with RBAC
+
+### Gaps (Honest — interviewer ko impress karta hai)
+- ⚠️ **Security:** `securityContext` empty, no `runAsNonRoot`, no capabilities drop
+- ⚠️ **TLS:** No HTTPS on ingress — `ssl-redirect: false`
+- ⚠️ **Observability:** No Prometheus/Grafana, no metrics-server
+- ⚠️ **HPA:** `autoscaling.enabled: false` — no auto-scaling
+- ⚠️ **DB HA:** MySQL sirf 1 replica, no failover, no backup job
+- ⚠️ **Rollout/CD:** bootstrap.sh manually — no CI pipeline (Actions)
+- ⚠️ **Image tags:** Fixed `1.0.0` tag — no git-SHA immutability
+- ⚠️ **NetworkPolicy:** Defined but cluster-level implementation varies
+- ⚠️ **Ingress:** No TLS cert, no readiness for external LB
+
+### Interviewer ko kaise bolna hai (honest tone)
+> "Yeh production-inspired demo hai jo local multi-node cluster pe chal raha
+> hai. Maine K8s ke core chune: StatefulSet for stateful DB with PVC, Helm for
+> parameterized backend, sidecar nginx for PHP-FPM, ingress for single L7
+> gateway, secrets via secretKeyRef. Main jaanta hoon asli production me iske
+> aage NetworkPolicy, managed TLS, Prometheus, HPA aur GitOps (ArgoCD) +
+> managed DB (RDS) aate hain — aur wo hi main production environment me
+> use karunga. Is SSA demo ka point core mechanics ka correct understanding
+> hai, production hardening ka next step hai."
+
+**Yehonest + self-aware** — **last** impression hai jo interviewer ko yaad rehta.
+
+---
+*Document last updated: 2026-09-01*
+*Source of truth for entire GitOps workflow — mxmobilz e-commerce platform*
