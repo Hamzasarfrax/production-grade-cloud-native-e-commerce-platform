@@ -54,10 +54,11 @@ patches:
 
 configMapGenerator:
 - name: env-config
-  behavior: merge
+  behavior: create
   literals:
   - ENVIRONMENT=staging
   - LOG_LEVEL=info
 
-commonLabels:
-  environment: staging
+labels:
+  - pairs:
+      environment: staging

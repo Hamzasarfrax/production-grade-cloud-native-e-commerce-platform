@@ -8,8 +8,8 @@ resources:
 - frontend/
 - ingress/
 - network-policies/
-# - external-secrets/  # Enable after installing External Secrets Operator
 
-commonLabels:
-  app.kubernetes.io/part-of: mxmobilz
-  app.kubernetes.io/managed-by: argocd
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: mxmobilz
+      app.kubernetes.io/managed-by: argocd

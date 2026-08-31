@@ -16,7 +16,7 @@
 | Database  | MySQL             | —         | 3306  |
 | Web (UI)  | React 19 + Vite + TS | `frontend/` | 3000 |
 
-## Current State (last updated: 2026-08-21)
+## Current State (last updated: 2026-08-31)
 
 - [x] Git initialized at root (commits exist: `cloud-native-app`).
 - [x] `frontend/` — Full React e-commerce UI (Landing, Shop, Compare, Trade-in, Cart,
@@ -63,7 +63,14 @@
       architecture diagram, production best-practices review (~80% done; gaps: K8s migrate Job,
       registry-prefixed git-SHA tags, nginx pin, /up health endpoint), aur Registry Push Workflow
       (dono images alag repos me `docker.io/<user>/mxmobilz-{api,web}:<sha>` tag/push) add.
-- [ ] README/docs — deployment/runbook/security/troubleshooting abhi bhi pending.
+- [x] docs/k8s-production-setup.md (2026-08-27): complete K8s production setup documentation
+      with WHAT/WHY/VERIFY/ALTERNATIVE for every component, architecture diagram, problems
+      faced, honest level assessment.
+- [x] docs/gitops-setup.md (2026-08-31): complete GitOps/ArgoCD documentation with repo
+      structure, App of Apps pattern, Kustomize overlays, RBAC, bootstrap, verify, operations,
+      secrets management, hardening checklist, troubleshooting.
+- [ ] README/docs — deployment.md, runbook.md, security.md, disaster-recovery.md,
+      troubleshooting.md abhi bhi pending.
 - [ ] Auth (Laravel Sanctum) for protected admin + `/api` — pending.
 - [x] K8s PRODUCTION-SETUP LIVE (2026-08-27): 3-node Kind cluster `mxmobilz-prod`
       (control-plane + 2 workers), namespace `cloud-native-ecomerce-app`. MySQL
@@ -74,7 +81,12 @@
       /api -> backend-backend-helm). LIVE VERIFIED: /api/products 200 full-stack
       (nginx->fpm->Laravel->MySQL). Docs: `docs/k8s-production-setup.md` (source of
       truth, WHAT/WHY/VERIFY/ALTERNATIVE + honest level assessment).
-      (ArgoCD abhi khaali/pending.)
+- [x] GitOps/ArgoCD SETUP COMPLETE (2026-08-31): ArgoCD Project (`mxmobilz-project.yaml`)
+      with RBAC roles (admin, developer, viewer, ci-cd), App-of-Apps root application
+      (`mxmobilz-root`) managing dev/staging/prod applications. Kustomize base + overlays
+      (dev/staging/prod) in `gitops/` with environment-specific patches (replicas, secrets,
+      log levels). ArgoCD apps point to `gitops/overlays/{dev,staging,prod}`. Network policies
+      + ExternalSecrets manifests ready. Docs: `docs/gitops-setup.md` (source of truth).
 
 ## Decisions / Facts
 
@@ -115,9 +127,9 @@ Response shape: `{ "ok": true, "data": ... }`.
 
 1. Auth — Laravel Sanctum (login/register) for protected admin + `/api` routes.
 2. K8s core setup DONE (kind multi-node, MySQL StatefulSet, backend Helm+sidecar,
-   frontend, ingress). Baki: ArgoCD GitOps pipeline (folders `argocd/` khali),
-   plus production hardening (NetworkPolicy, TLS, HPA enable, Prometheus,
-   metrics-server, runAsNonRoot, backup job).
+   frontend, ingress). ArgoCD GitOps pipeline COMPLETE (App-of-Apps, Kustomize overlays,
+   RBAC). Baki: production hardening (TLS/cert-manager, HPA enable, Prometheus/
+   metrics-server, runAsNonRoot, backup job/Velero, image signing).
 3. Docs: deployment.md, runbook.md, security.md, disaster-recovery.md, troubleshooting.md.
 4. Admin: product edit UI + promos management tab (API methods already exist in `src/api.ts`).
 

@@ -74,10 +74,11 @@ patches:
 
 configMapGenerator:
 - name: env-config
-  behavior: merge
+  behavior: create
   literals:
   - ENVIRONMENT=production
   - LOG_LEVEL=warn
 
-commonLabels:
-  environment: prod
+labels:
+  - pairs:
+      environment: prod

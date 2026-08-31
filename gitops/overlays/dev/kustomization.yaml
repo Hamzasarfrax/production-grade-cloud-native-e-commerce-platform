@@ -40,10 +40,11 @@ patches:
 
 configMapGenerator:
 - name: env-config
-  behavior: merge
+  behavior: create
   literals:
   - ENVIRONMENT=development
   - LOG_LEVEL=debug
 
-commonLabels:
-  environment: dev
+labels:
+  - pairs:
+      environment: dev
