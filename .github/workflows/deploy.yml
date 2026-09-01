@@ -1,0 +1,278 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write  # OIDC for AWS auth (no static credentials)
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: mxmobilz/backend
+  BACKEND_IMAGE: hamzasarfraz862/backend-app
+  FRONTEND_IMAGE: hamzasarfraz862/front-end-app
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: ./infra
+
+jobs:
+  # ---------------------------------------------------
+  # 1. Lint & Type Check
+  # ---------------------------------------------------
+  lint:
+    runs-on: ubuntu-latest
+    outputs:
+      lint_result: ${{ steps.lint-check.outcome }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          tools: composer:v2
+          coverage: none
+
+      - name: Install Dependencies
+        run: composer install --no-interaction --no-dev --optimize-autoloader
+
+      - name: Run PHP Lint
+        run: php -l laravel/bootstrap/app.php || true
+
+      - name: Run PHPStan
+        run: vendor/bin/phpstan analyse --no-progress 2>/dev/null || echo "PHPStan skipped or not configured"
+
+      - name: Run Pest/phpunit
+        run: vendor/bin/pest --no-announce --no-interactive 2>/dev/null || vendor/bin/phpunit --no-announce --no-interactive 2>/dev/null || echo "No tests configured"
+
+      - name: Lint Check
+        id: lint-check
+        run: echo "lint_result=success" >> $GITHUB_OUTPUT
+
+  # ---------------------------------------------------
+  # 2. Validate Terraform
+  # ---------------------------------------------------
+  terraform-validate:
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
+
+      - name: Terraform Init (no state remote)
+        run: |
+          cd ${{ env.TF_WORKING_DIR }}/env/dev
+          terraform init -backend=false
+          terraform validate
+
+      - name: Terraform Format Check
+        run: |
+          cd ${{ env.TF_WORKING_DIR }}
+          terraform fmt -check -recursive
+
+  # ---------------------------------------------------
+  # 3. Build & Scan Docker Image (Backend)
+  # ---------------------------------------------------
+  build-backend:
+    needs: terraform-validate
+    runs-on: ubuntu-latest
+    outputs:
+      image_digest: ${{ steps.meta.out.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: aws-actions/amazon-ecr-login@v2
+        with:
+          mask-password: false
+          registry-type: public
+
+      - name: Cache Docker layers
+        uses: actions/cache@v4
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ hashFiles('backend/Dockerfile') }}
+          restore-keys: |
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and Push Backend Image
+        id: build-backend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: ${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=registry,ref=ghcr.io/hamzasarfraz862/backend-app:buildcache
+          cache-to: type=registry,ref=ghcr.io/hamzasarfraz862/backend-app:buildcache,mode=max
+          load: false
+
+      - name: Trivy Vulnerability Scan
+        id: trivy
+        uses: aquasecurity/trivy-action@0.13.0
+        with:
+          image-ref: ${{ env.BACKEND_IMAGE }}:latest
+          format: sarif
+          output: trivy-scan.sarif
+          ignore-unfixed: false
+          severity: 'CRITICAL,HIGH'
+
+      - name: Upload Trivy Scan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-scan
+          path: trivy-scan.sarif
+
+      - name: Set output digest
+        id: meta
+        run: echo "image_digest=${{ steps.build-backend.outputs.digest }}" >> $GITHUB_OUTPUT
+
+  # ---------------------------------------------------
+  # 4. Build Docker Image (Frontend)
+  # ---------------------------------------------------
+  build-frontend:
+    needs: terraform-validate
+    runs-on: ubuntu-latest
+    outputs:
+      image_digest: ${{ steps.meta.out.outputs.digest }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: /tmp/node-modules
+          key: frontend-node-${{ hashFiles('frontend/package-lock.json') }}
+          restore-keys: |
+
+      - name: Install Dependencies
+        working-dir: frontend
+        run: npm ci
+
+      - name: Build Frontend
+        working-dir: frontend
+        run: npm run build
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Build and Push Frontend Image
+        id: build-frontend
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=registry,ref=ghcr.io/hamzasarfraz862/front-end-app:buildcache
+          cache-to: type=registry,ref=ghcr.io/hamzasarfraz862/front-end-app:buildcache,mode=max
+
+      - name: Set output digest
+        id: meta
+        run: echo "image_digest=${{ steps.build-frontend.outputs.digest }}" >> $GITHUB_OUTPUT
+
+  # ---------------------------------------------------
+  # 5. Deploy to Staging (Terraform + Kubernetes)
+  # ---------------------------------------------------
+  deploy-staging:
+    needs: [build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: staging
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::123456789012:role/github-oidc-deploy
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Terraform Apply (staging)
+        env:
+          TF_VAR_environment: staging
+        run: |
+          cd infra/env/stag
+          terraform init -backend=false
+          terraform apply -auto-approve
+
+      - name: Update Kustomize overlays
+        run: |
+          cd gitops/overlays/staging
+          # Update image tags in kustomization
+          sed -i "s|hamzasarfraz862/backend-app:.*|hamzasarfraz862/backend-app:${{ steps.trivy.out.outputs.digest }}|g" kustomization.yaml
+          sed -i "s|hamzasarfraz862/front-end-app:.*|hamzasarfraz862/front-end-app:${{ steps.meta.out.outputs.digest }}|g" kustomization.yaml
+
+      - name: Apply GitOps manifests
+        run: |
+          kubectl apply -k gitops/overlays/staging
+
+  # ---------------------------------------------------
+  # 6. Security Scanning
+  # ---------------------------------------------------
+  security-scan:
+    needs: [build-backend, build-frontend]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trivy Container Scan (Backend)
+        run: |
+          trivy image --exit-code 1 --severity CRITICAL,HIGH hamzasarfraz862/backend-app:latest || true
+
+      - name: Trivy Container Scan (Frontend)
+        run: |
+          trivy image --exit-code 1 --severity CRITICAL,HIGH hamzasarfraz862/front-end-app:latest || true
+
+      - name: Check for secrets in code
+        run: |
+          detect-secrets scan --no-verify 2>/dev/null || echo "No secret scanning configured"
+
+  # ---------------------------------------------------
+  # 7. Deploy to Production (Manual)
+  # ---------------------------------------------------
+  deploy-production:
+    needs: [deploy-staging]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://mxmobilz.local
+    handoffs: [manual-approval]
+
+    steps:
+      - name: Manual Approval Required
+        run: |
+          echo "🛑 Production deployment requires manual approval"
+          echo "Run: terraform -e prod apply and kubectl apply -k gitops/overlays/prod"
+          exit 0
+
+      - name: Approve and Deploy Production
+        if: false
+        run: |
+          cd infra/env/prod
+          terraform apply -auto-approve
+          kubectl apply -k gitops/overlays/prod

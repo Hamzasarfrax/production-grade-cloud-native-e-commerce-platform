@@ -1,12 +1,13 @@
-# 🛍️ Mxmobilz — Enterprise Cloud-Native E-commerce Platform
+# 🛍️ Mxmobilz — Cloud-Native E-commerce Platform
 
-> A **production-ready**, full-stack e-commerce platform for mobile phones built with modern cloud-native architecture, microservices, Kubernetes, and GitOps. Designed with DevOps best practices, security hardening, and scalability from day one.
+> A **full-stack**, cloud-native e-commerce platform for mobile phones demonstrating modern DevOps practices, infrastructure as code, and containerized microservices. Built to be interview-ready and production-deployable on AWS EKS.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)]()
+[![Status: Interview-Ready](https://img.shields.io/badge/Status-Interview--Ready-brightgreen)]()
 [![Kubernetes: 1.28+](https://img.shields.io/badge/Kubernetes-1.28%2B-blue)]()
+[![GitHub Actions: CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue)]()
 
----
+> **⚠️ Note**: This is a hands-on portfolio project. Real AWS deployment requires AWS account, domain, and proper IAM setup. See `docs/` for detailed guides.
 
 ## 📋 Table of Contents
 
@@ -265,25 +266,29 @@ npm run dev
 - API: http://localhost:8000/api
 ```
 
-#### **Option 3: Production Kubernetes (Advanced)**
+#### **Option 3: Production Kubernetes (AWS EKS)**
+
+Real-world deployment uses Terraform + ArgoCD GitOps:
 
 ```bash
 # See docs/k8s-production-setup.md for full guide
 cd infra
 
-# Initialize Terraform backend
+# Initialize Terraform remote backend (S3 or local)
 ./scripts/init.sh
 
-# Deploy to AWS EKS
-./scripts/deploy.sh -e dev -a apply
+# Deploy infrastructure (VPC, EKS, RDS) via Terraform
+terraform -e prod init
+terraform -e prod apply
 
 # Configure kubectl
-aws eks update-kubeconfig --region us-east-1 --name mxmobilz-dev
-kubectl get nodes
+aws eks update-kubeconfig --region us-east-1 --name mxmobilz-prod
 
-# Deploy application via ArgoCD
+# Deploy ArgoCD and applications
 cd ../gitops
 kubectl apply -f bootstrap-argocd.sh
+
+# ArgoCD auto-syncs from GitOps overlays (dev/staging/prod)
 ```
 
 ---
