@@ -1,0 +1,209 @@
+name: CI
+
+# Single pipeline that tells the truth about this repo:
+# backend (lint + static analysis + tests), Docker image build,
+# K8s manifests (kustomize) and Terraform (fmt + validate).
+# A "repo-audit" job reports the state of the whole project without failing.
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: "8.3"
+
+jobs:
+  backend:
+    name: Backend (lint + phpstan + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP ${{ env.PHP_VERSION }}
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # 2.37.2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          tools: composer:v2
+          coverage: none
+
+      - name: Composer cache
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Code style (Laravel Pint)
+        run: vendor/bin/pint --test
+
+      - name: Static analysis (larastan level 7)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=512M
+
+      - name: Tests (PHPUnit, sqlite in-memory)
+        run: php artisan test
+
+  docker-build:
+    name: Docker build (backend image)
+    runs-on: ubuntu-latest
+    needs: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build backend image
+        run: docker build -t mxmobilz-backend:ci ./backend
+
+      - name: Smoke-test the image
+        run: |
+          docker run --rm --entrypoint php mxmobilz-backend:ci -v
+          docker image inspect mxmobilz-backend:ci --format 'size={{.Size}} bytes'
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Skip honestly when frontend/ is not committed yet
+        id: check
+        run: |
+          if [ -f frontend/package.json ] && [ -f frontend/Dockerfile ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Frontend not in repo::frontend/ has no package.json — the React app exists locally but is not committed. This job cannot build it."
+          fi
+
+      - name: Setup Node
+        if: steps.check.outputs.present == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install, typecheck, build
+        if: steps.check.outputs.present == 'true'
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run lint --if-present
+          npm run build
+
+  k8s-manifests:
+    name: Kustomize build (dev / staging / prod)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install kustomize
+        run: |
+          curl -s "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh" | bash
+          sudo mv kustomize /usr/local/bin/
+
+      - name: Build every overlay
+        run: |
+          for env in dev staging prod; do
+            echo "::group::gitops/overlays/$env"
+            kustomize build "gitops/overlays/$env" > "/tmp/$env.yaml"
+            echo "rendered $(grep -c '^kind:' /tmp/$env.yaml) resources"
+            echo "::endgroup::"
+          done
+
+  terraform:
+    name: Terraform (${{ matrix.dir }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dir: [infra/env/dev, infra/env/stag, infra/env/prod, infra/remote-backend]
+    defaults:
+      run:
+        working-directory: ${{ matrix.dir }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install Terraform
+        run: |
+          TF=1.9.8
+          curl -OsS "https://releases.hashicorp.com/terraform/${TF}/terraform_${TF}_linux_amd64.zip"
+          unzip -q "terraform_${TF}_linux_amd64.zip"
+          sudo mv terraform /usr/local/bin/
+
+      - name: terraform fmt -check
+        run: terraform fmt -check -recursive || { echo "::error::Run 'terraform fmt -recursive' in infra/ and commit."; exit 1; }
+
+      - name: terraform init (backend disabled)
+        run: terraform init -backend=false -no-color
+
+      - name: terraform validate
+        run: terraform validate -no-color
+
+  repo-audit:
+    name: Repo audit (report only)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Audit repo contents
+        run: |
+          {
+            echo "# Repository audit — $(date -u +%F)"
+            echo ""
+            echo "| Check | Status |"
+            echo "|---|---|"
+            if [ -f frontend/package.json ]; then echo "| frontend/ React app committed | ✅ |"; else echo "| frontend/ React app committed | ❌ empty directory — app exists locally only |"; fi
+            n=$(find backend/tests -name '*Test.php' 2>/dev/null | wc -l)
+            if [ "$n" -gt 0 ]; then echo "| backend tests present | ✅ $n test file(s) |"; else echo "| backend tests present | ❌ none |"; fi
+            [ -f LICENSE ] && echo "| LICENSE file | ✅ |" || echo "| LICENSE file | ❌ missing |"
+            if [ -f .github/workflows/ci.yml ]; then echo "| CI pipeline at repo root | ✅ |"; else echo "| CI pipeline at repo root | ❌ |"; fi
+            if grep -q "auth:sanctum" backend/routes/api.php 2>/dev/null; then
+              echo "| API authentication | ✅ |"
+            else
+              echo "| API authentication | ❌ no auth middleware — all routes public |"
+            fi
+            if grep -q "DB::transaction" backend/app/Http/Controllers/Api/OrderController.php 2>/dev/null; then
+              echo "| Order write in DB transaction | ✅ |"
+            else
+              echo "| Order write in DB transaction | ❌ not transactional yet |"
+            fi
+            echo ""
+            echo "This job never fails — it is a status report. The real gates are backend / docker-build / k8s-manifests / terraform."
+          } >> "$GITHUB_STEP_SUMMARY"
