@@ -127,6 +127,13 @@ above pass at that commit; anything listed red in `repo-audit` is a known gap, n
 
 Dependencies are refreshed by **Dependabot** (`.github/dependabot.yml`: actions + composer).
 
+> **First-run note:** the workflow file (`.github/workflows/ci.yml`) is written in-repo, but the
+> automation used during the 2026-09-01 audit commit could not push into `.github/workflows/`
+> (GitHub App permission). One-time 2-minute activation: follow
+> [docs/CI-SETUP.md](docs/CI-SETUP.md) (paste [`docs/ci.yml.example`](docs/ci.yml.example) as
+> `.github/workflows/ci.yml`). Until that happens the Actions tab is legitimately empty —
+> this paragraph is the honest status, not a missing badge.
+
 ---
 
 ## 🚀 Quick Start (backend API)
