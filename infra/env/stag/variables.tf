@@ -13,7 +13,7 @@ variable "region" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
+  default     = "staging"
 
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
@@ -25,7 +25,7 @@ variable "environment" {
 variable "vpc_cidr" {
   description = "VPC CIDR block"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "10.1.0.0/16"
 }
 
 # EKS Variables
@@ -38,7 +38,7 @@ variable "kubernetes_version" {
 variable "node_instance_type" {
   description = "Instance type for worker nodes"
   type        = string
-  default     = "t3.medium"
+  default     = "t3.small"
 }
 
 variable "node_desired_size" {
@@ -50,25 +50,25 @@ variable "node_desired_size" {
 variable "node_min_size" {
   description = "Minimum number of worker nodes"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "node_max_size" {
   description = "Maximum number of worker nodes"
   type        = number
-  default     = 4
+  default     = 6
 }
 
 variable "node_disk_size" {
   description = "Disk size for worker nodes in GB"
   type        = number
-  default     = 30
+  default     = 50
 }
 
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"
   type        = number
-  default     = 7
+  default     = 30
 }
 
 variable "public_access_cidrs" {
@@ -100,13 +100,13 @@ variable "mysql_engine_version" {
 variable "rds_instance_class" {
   description = "RDS instance class"
   type        = string
-  default     = "db.t3.micro"
+  default     = "db.t3.small"
 }
 
 variable "rds_allocated_storage" {
   description = "RDS allocated storage in GB"
   type        = number
-  default     = 20
+  default     = 50
 }
 
 variable "rds_storage_type" {
@@ -118,13 +118,13 @@ variable "rds_storage_type" {
 variable "rds_multi_az" {
   description = "Enable RDS Multi-AZ"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_backup_retention" {
   description = "RDS backup retention period in days"
   type        = number
-  default     = 7
+  default     = 14
 }
 
 variable "rds_backup_window" {
@@ -142,19 +142,19 @@ variable "rds_maintenance_window" {
 variable "rds_skip_final_snapshot" {
   description = "Skip final snapshot when destroying RDS"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "rds_performance_insights" {
   description = "Enable RDS Performance Insights"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_deletion_protection" {
   description = "Enable RDS deletion protection"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_iops" {

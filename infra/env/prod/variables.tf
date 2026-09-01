@@ -13,7 +13,7 @@ variable "region" {
 variable "environment" {
   description = "Environment name"
   type        = string
-  default     = "dev"
+  default     = "prod"
 
   validation {
     condition     = contains(["dev", "staging", "prod"], var.environment)
@@ -25,7 +25,7 @@ variable "environment" {
 variable "vpc_cidr" {
   description = "VPC CIDR block"
   type        = string
-  default     = "10.0.0.0/16"
+  default     = "10.2.0.0/16"
 }
 
 # EKS Variables
@@ -44,31 +44,31 @@ variable "node_instance_type" {
 variable "node_desired_size" {
   description = "Desired number of worker nodes"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "node_min_size" {
   description = "Minimum number of worker nodes"
   type        = number
-  default     = 1
+  default     = 3
 }
 
 variable "node_max_size" {
   description = "Maximum number of worker nodes"
   type        = number
-  default     = 4
+  default     = 10
 }
 
 variable "node_disk_size" {
   description = "Disk size for worker nodes in GB"
   type        = number
-  default     = 30
+  default     = 100
 }
 
 variable "log_retention_days" {
   description = "CloudWatch log retention in days"
   type        = number
-  default     = 7
+  default     = 90
 }
 
 variable "public_access_cidrs" {
@@ -100,13 +100,13 @@ variable "mysql_engine_version" {
 variable "rds_instance_class" {
   description = "RDS instance class"
   type        = string
-  default     = "db.t3.micro"
+  default     = "db.t3.medium"
 }
 
 variable "rds_allocated_storage" {
   description = "RDS allocated storage in GB"
   type        = number
-  default     = 20
+  default     = 100
 }
 
 variable "rds_storage_type" {
@@ -118,13 +118,13 @@ variable "rds_storage_type" {
 variable "rds_multi_az" {
   description = "Enable RDS Multi-AZ"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_backup_retention" {
   description = "RDS backup retention period in days"
   type        = number
-  default     = 7
+  default     = 30
 }
 
 variable "rds_backup_window" {
@@ -142,25 +142,25 @@ variable "rds_maintenance_window" {
 variable "rds_skip_final_snapshot" {
   description = "Skip final snapshot when destroying RDS"
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "rds_performance_insights" {
   description = "Enable RDS Performance Insights"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_deletion_protection" {
   description = "Enable RDS deletion protection"
   type        = bool
-  default     = false
+  default     = true
 }
 
 variable "rds_iops" {
   description = "RDS IOPS for gp3"
   type        = number
-  default     = 3000
+  default     = 5000
 }
 
 variable "mysql_parameter_group_family" {
@@ -173,7 +173,11 @@ variable "mysql_parameters" {
   description = "MySQL parameters"
   type        = map(string)
   default = {
-    "character_set_server" = "utf8mb4"
-    "collation_server"     = "utf8mb4_unicode_ci"
+    "character_set_server"       = "utf8mb4"
+    "collation_server"           = "utf8mb4_unicode_ci"
+    "max_connections"            = "1000"
+    "slow_query_log"             = "1"
+    "long_query_time"            = "2"
+    "log_bin_trust_function_creators" = "1"
   }
 }
