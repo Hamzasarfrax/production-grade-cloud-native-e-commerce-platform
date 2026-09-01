@@ -11,7 +11,7 @@ spec:
   project: mxmobilz
   source:
     repoURL: 'https://github.com/Hamzasarfrax/production-grade-cloud-native-e-commerce-platform'
-    targetRevision: main
+    targetRevision: dev
     path: gitops/overlays/dev
   destination:
     server: https://kubernetes.default.svc

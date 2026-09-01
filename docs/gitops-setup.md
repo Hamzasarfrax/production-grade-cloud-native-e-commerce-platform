@@ -732,17 +732,6 @@ Add promo codes management to production environment.
 - ⚠️ **NetworkPolicy:** Defined but cluster-level implementation varies
 - ⚠️ **Ingress:** No TLS cert, no readiness for external LB
 
-### Interviewer ko kaise bolna hai (honest tone)
-> "Yeh production-inspired demo hai jo local multi-node cluster pe chal raha
-> hai. Maine K8s ke core chune: StatefulSet for stateful DB with PVC, Helm for
-> parameterized backend, sidecar nginx for PHP-FPM, ingress for single L7
-> gateway, secrets via secretKeyRef. Main jaanta hoon asli production me iske
-> aage NetworkPolicy, managed TLS, Prometheus, HPA aur GitOps (ArgoCD) +
-> managed DB (RDS) aate hain — aur wo hi main production environment me
-> use karunga. Is SSA demo ka point core mechanics ka correct understanding
-> hai, production hardening ka next step hai."
-
-**Yehonest + self-aware** — **last** impression hai jo interviewer ko yaad rehta.
 
 ---
 *Document last updated: 2026-09-01*
