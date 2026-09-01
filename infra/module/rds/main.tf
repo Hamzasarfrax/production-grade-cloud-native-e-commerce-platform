@@ -69,7 +69,11 @@ resource "aws_db_instance" "main" {
     Environment = var.environment
   }
 
-  depends_on = [aws_secretsmanager_secret_version.db_password]
+  # NOTE: secret version ke andar instance ke attributes (host/port) reference
+  # hote hain, isliye instance -> secret ki implicit dependency hi correct order
+  # deti hai. Explicit depends_on yahan circular dependency banata tha:
+  #   aws_db_instance.main -> secret_version -> aws_db_instance.main
+  # (terraform validate isko "Cycle" error deta fail karta tha.)
 }
 
 # Database parameter group

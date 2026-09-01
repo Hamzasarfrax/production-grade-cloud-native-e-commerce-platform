@@ -4,6 +4,53 @@
 > pehle ye file parhe aur wahan se current state + next steps samjhe. Har kaam ke baad isko
 > update karna jaruri hai.
 
+## Session update 2026-09-01 (repo audit + CI + honesty pass) — READ FIRST
+
+User ne kaha: real problems batao, GitHub Actions add karo taake pata chale kya chal raha hai,
+docs ko reality-based update karo (jo kaam hua wahi likho, fake nahi). Kiya gaya:
+
+- **Audit**: poora repo check kiya (code, docker, k8s, terraform, saari docs + GitHub pe actual
+  state). Result: purani README/CHECKLIST/SUMMARY claims repo se match nahi karti thi (frontend,
+  CI, tests, LICENSE, working TF). Ledger: **`docs/STATUS.md`** (19 rows, evidence ke saath).
+- **CI added (root `.github/workflows/ci.yml`)**: backend (pint+phpstan+phpunit) → docker build →
+  kustomize build (3 overlays) → terraform fmt/validate (4 dirs) + non-blocking repo-audit job.
+  Dependabot root pe move hua (composer + actions). Purana `backend/.github/` delete — GitHub us
+  location me workflows ko kabhi run nahi karta tha, is liye history me 0 CI runs the.
+- **Real bugs found & fixed**:
+  1. `Product` model `#[Fillable]` me `id` missing → `POST /api/products` 500 (null PK insert). Fixed + test.
+  2. `infra/module/vpc/provider.tf` = LocalStack debug provider (fake creds, localhost:4566)
+     module ke andar committed → har real AWS apply fail hota. Deleted (modules ab env ka
+     provider inherit karte hain).
+  3. `infra/remote-backend/provider.tf` me bhi wahi LocalStack override → real AWS + region var pe fix.
+  4. RDS module: `aws_db_instance` pe `depends_on: secret_version` → circular dependency →
+     `terraform validate` fail. Removed (implicit order theek hai: instance → secret).
+  5. `infra/env/dev/ouputs.tf` empty typo file → deleted. `infra/scripts/{init,deploy}.sh`
+     (Makefile/README reference karte the magar maujood nahi the) → banaye, executable.
+  6. LICENSE missing tha MIT badge ke bawajood → MIT LICENSE add. Root `.env.example`
+     (compose ${DB_*} interpolation) aur root `.gitignore` add.
+- **Tests added**: `backend/tests/` (TestCase + 5 Feature suites) — pehle ZERO tests the.
+- **Docs rewrite**: README (reality-check table), FINAL_CHECKLIST (100%✅ fake → real status),
+  PROJECT_SUMMARY + INTERVIEW_TALKING_POINTS (banner + real numbers + "what's NOT done" section),
+  docs/*.md stale refs fix + planned-vs-verified banners.
+- **Still open (priority order)**: (1) **frontend/ commit karo** — repo me abhi bhi EMPTY hai,
+  sabse bara gap; (2) Sanctum auth + rate limit; (3) order write ko `DB::transaction` +
+  server-side totals + stock decrement; (4) docker-publish workflow + gitops image tag
+  auto-bump (abhi 1.0.0 vs compose 1.0.2 drift); (5) `terraform apply` dev → demo → destroy;
+  (6) ExternalSecrets ko kustomize build me wire karo; (7) TLS/cert-manager, HPA.
+- NOTE: Neeche ke purane entries history hain — jahan `[x] frontend ... done` likha hai uska
+  matlab user ki LOCAL machine (WSL/Windows E:) thi; GitHub repo me wo files kabhi commit nahi
+  huin (repo me sirf 2 commits the: PR#4 "Dev" merge + "terraform-done"). Reality source of
+  truth ab: **docs/STATUS.md**.
+
+## Current state snapshot (2026-09-01)
+
+- [x] Backend: code + tests + CI green-gated. Docker (API side) in repo.
+- [x] GitOps/Terraform: CI-validated (fmt/validate/kustomize) — never applied to real cloud.
+- [ ] **`frontend/` — REPO me EMPTY** (local app zinda hai: Landing/Shop/Compare/Trade-in/Cart/
+      Checkout/Contact/Admin; `src/api.ts` + Vite proxy + localStorage fallback). Action:
+      `git add frontend` (node_modules/.env ignore karke) — phir full-stack compose + CI
+      frontend job khud-b-khud activate ho jayenge.
+
 ## Project Overview
 
 ##################
@@ -16,7 +63,7 @@
 | Database  | MySQL             | —         | 3306  |
 | Web (UI)  | React 19 + Vite + TS | `frontend/` | 3000 |
 
-## Current State (last updated: 2026-08-31)
+## Current State (historical log — pre-2026-09-01; "done" items marked ✅ below describe the LOCAL machine unless the file exists in this repo — cross-check docs/STATUS.md)
 
 - [x] Git initialized at root (commits exist: `cloud-native-app`).
 - [x] `frontend/` — Full React e-commerce UI (Landing, Shop, Compare, Trade-in, Cart,

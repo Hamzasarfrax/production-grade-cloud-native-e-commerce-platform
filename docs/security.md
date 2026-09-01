@@ -1,5 +1,7 @@
 # Security Best Practices & Hardening Guide
 
+> **⚠️ Status banner (2026-09-01):** mixed document. Enforced today: validation on all writes, non-root containers, NetworkPolicies, encrypted-by-design Terraform, Dependabot (see `docs/STATUS.md` §3). NOT implemented: auth, rate limiting, WAF, cert-manager/TLS, audit logging — this guide is the plan for those, not evidence of them.
+
 ## Overview
 
 This guide covers security best practices, hardening procedures, and compliance considerations for the Mxmobilz platform. Security is implemented at multiple layers: application, infrastructure, and operational levels.

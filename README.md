@@ -1,655 +1,365 @@
-# 🛍️ Mxmobilz — Enterprise Cloud-Native E-commerce Platform
+# 🛍️ Mxmobilz — Cloud-Native E-commerce Platform (Portfolio Project)
 
-> A **production-ready**, full-stack e-commerce platform for mobile phones built with modern cloud-native architecture, microservices, Kubernetes, and GitOps. Designed with DevOps best practices, security hardening, and scalability from day one.
+> A **full-stack e-commerce API** (Laravel 13 + MySQL) with the surrounding cloud-native
+> platform work: Docker, Kubernetes (Kind, EKS-ready), ArgoCD GitOps, Terraform (AWS
+> dev/staging/prod) and a real CI pipeline. **This is a portfolio/learning project, not a
+> live production deployment** — and this README tells you exactly what is verified, what is
+> local-only, and what is pending. No marketing.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Status: Production Ready](https://img.shields.io/badge/Status-Production%20Ready-brightgreen)]()
-[![Kubernetes: 1.28+](https://img.shields.io/badge/Kubernetes-1.28%2B-blue)]()
+![CI](https://github.com/Hamzasarfrax/production-grade-cloud-native-e-commerce-platform/actions/workflows/ci.yml/badge.svg)
+[![Status: Development](https://img.shields.io/badge/Status-Development-orange)]()
+
+**Start here if you want the unvarnished facts:** [docs/STATUS.md](docs/STATUS.md) — every
+claim in this repo, marked ✅ verified / ⚠️ partial / ❌ not done, with the command to
+re-verify it.
 
 ---
 
 ## 📋 Table of Contents
 
-- [Overview](#overview)
-- [Architecture](#architecture)
-- [Tech Stack](#tech-stack)
-- [Features](#features)
-- [Quick Start](#quick-start)
-- [Project Structure](#project-structure)
-- [Deployment](#deployment)
-- [Documentation](#documentation)
-- [Development Workflows](#development-workflows)
-- [Security & Best Practices](#security--best-practices)
-- [Contributing](#contributing)
+- [What actually exists (reality check)](#-what-actually-exists-reality-check)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [CI pipeline (GitHub Actions)](#-ci-pipeline-github-actions)
+- [Quick Start (backend API)](#-quick-start-backend-api)
+- [API reference](#-api-reference)
+- [Testing](#-testing)
+- [Docker & Kubernetes & GitOps](#-docker--kubernetes--gitops)
+- [Infrastructure as Code (Terraform)](#-infrastructure-as-code-terraform)
+- [Security posture (honest)](#-security-posture-honest)
+- [Known issues & limitations](#-known-issues--limitations)
+- [Roadmap](#-roadmap)
+- [Documentation index](#-documentation-index)
 
 ---
 
-## 🎯 Overview
+## ✅❌ What actually exists (reality check)
 
-**Mxmobilz** is a fully-featured e-commerce platform built on cutting-edge cloud-native technologies. It demonstrates:
-
-✅ **Microservices Architecture** — Decoupled frontend, API, and database  
-✅ **Production Kubernetes** — EKS with auto-scaling, IRSA, and monitoring  
-✅ **GitOps Pipeline** — ArgoCD with App-of-Apps pattern  
-✅ **Infrastructure as Code** — Terraform with multi-environment setup (dev/staging/prod)  
-✅ **DevOps Practices** — CI/CD ready, automated backups, disaster recovery  
-✅ **Security Hardening** — Secrets management, RBAC, network policies  
-✅ **Monitoring & Logging** — CloudWatch, Prometheus integration ready  
-
-**Perfect for:**
-- Learning cloud-native architecture
-- Job interviews (demonstrates full-stack DevOps knowledge)
-- Production deployments on AWS EKS
-- Building your own SaaS platform
+| Component | State | Details |
+|---|---|---|
+| **Backend API** (Laravel 13) | ✅ In repo | 5 resource controllers (products, orders, inquiries, promos, stats) + health. Validation on every write. String-PK models with `toApi()` serializers. Migrations + idempotent seeders. |
+| **Docker stack (API side)** | ✅ In repo | Multi-stage `backend/Dockerfile` (composer → php:8.3-fpm, non-root), auto-setup `entrypoint.sh` (DB wait → migrate → seed-if-empty), root `docker-compose.yml` (mysql 8.4 + php-fpm + nginx). Live-verified on the dev machine (2026-08-21), logs in `docs/docker-trouble.md`. |
+| **Tests** | ✅ In repo (added 2026-09-01) | `backend/tests` — PHPUnit feature suite for health, product CRUD + validation, order placement + status flow, inquiry + stats aggregation, promos. Runs in CI on every PR. |
+| **CI pipeline** | ✅ In repo (added 2026-09-01) | Root `.github/workflows/ci.yml` — Pint, Larastan (level 7), tests, Docker build, kustomize build of all overlays, `terraform fmt`+`validate` for 3 envs, plus a repo-audit report job. Dependabot for actions + composer. (Earlier CI attempt sat in `backend/.github/` — GitHub never runs workflows there; that is now fixed and the dead copy removed.) |
+| **Kubernetes manifests + GitOps** | ✅ In repo | `gitops/` — Kustomize base + `dev`/`staging`/`prod` overlays, MySQL StatefulSet, backend (nginx sidecar + PHP-FPM), NetworkPolicies, ArgoCD App-of-Apps, ExternalSecrets manifests (not wired into the build yet). |
+| **Kind cluster (local K8s)** | ⚠️ Verified locally only | 3-node Kind cluster ran full stack with ArgoCD on the dev machine (2026-08-27/31). Reproducible via `docs/k8s-production-setup.md` + `docs/gitops-setup.md`, but it does not live in this repo and nothing is running right now. |
+| **AWS via Terraform** | ⚠️ Validated, never applied | VPC/EKS/RDS modules + dev/stag/prod envs + S3/DynamoDB state bootstrap. CI runs `terraform fmt`/`validate`; it has **never been applied against a real AWS account** (that costs money; not done yet). Two real bugs were found and fixed on 2026-09-01: a LocalStack debug provider committed inside `module/vpc`, and a circular dependency in the RDS module (`terraform validate` failed on both). |
+| **Frontend (React + Vite + TS)** | ❌ Not in this repo | The storefront/admin SPA exists only in the developer's local working copy (its status log: `AGENTS.md`). Until it is committed: the repo has an empty `frontend/`, `docker compose up` fails at the frontend build, and no frontend features in any doc should be assumed available. This is the #1 open item. |
+| **Live production URL** | ❌ None | There is no deployed public instance of this project. Any doc mentioning a live URL describes the procedure, not a running service. |
+| **Auth / payments / email** | ❌ Not implemented | No Sanctum routes, no Stripe integration code (package is required in composer.json but unused), no mail flows. |
 
 ---
 
 ## 🏗️ Architecture
 
-### High-Level Overview
+```
+                        ┌────────────────────────────┐
+   Browser ───────────► │  Frontend (React+Vite)    │  ⚠️ local copy only, not committed
+                        │  nginx :3000 (or vite dev)│
+                        └────────────┬───────────────┘
+                                     │ /api (same-origin reverse proxy / Vite proxy)
+                        ┌────────────▼───────────────┐
+                        │  nginx :8000 ──► PHP-FPM   │  ✅ backend/ (Dockerfile, entrypoint)
+                        │  Laravel 13 JSON API       │
+                        └────────────┬───────────────┘
+                                     │ Eloquent / mysql:3306
+                        ┌────────────▼───────────────┐
+                        │  MySQL 8                   │  local: compose container · kind: StatefulSet · aws: RDS (Terraform, never applied)
+                        └────────────────────────────┘
 
+ Delivery: GitHub (source of truth) → CI (GitHub Actions) → [manual] docker push
+          → ArgoCD (App-of-Apps) → Kustomize overlays (dev/staging/prod) → Kind (local) / EKS (planned)
 ```
-┌─────────────────────────────────────────────────────────┐
-│                    AWS Account                          │
-├─────────────────────────────────────────────────────────┤
-│                                                           │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  AWS EKS Cluster (Kubernetes 1.28+)            │   │
-│  │  ┌────────────────────────────────────────────┐ │   │
-│  │  │  Ingress Controller (nginx)                │ │   │
-│  │  │    ▼                  ▼                     │ │   │
-│  │  │  Frontend Pods      Backend Pods           │ │   │
-│  │  │  (React + Nginx)    (Laravel + PHP-FPM)   │ │   │
-│  │  │    ▼                  ▼                     │ │   │
-│  │  └────────────────────────────────────────────┘ │   │
-│  │                      ▼                           │   │
-│  │  ┌────────────────────────────────────────────┐ │   │
-│  │  │  RDS MySQL (Multi-AZ, Automated Backups)  │ │   │
-│  │  └────────────────────────────────────────────┘ │   │
-│  └──────────────────────────────────────────────────┘   │
-│                                                           │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  Git Repository + ArgoCD (Continuous Delivery)  │   │
-│  │  Kustomize + Helm for Infrastructure            │   │
-│  └──────────────────────────────────────────────────┘   │
-│                                                           │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  Monitoring: CloudWatch + Prometheus            │   │
-│  │  Logging: CloudWatch Logs                       │   │
-│  │  Secrets: AWS Secrets Manager                   │   │
-│  └──────────────────────────────────────────────────┘   │
-│                                                           │
-└─────────────────────────────────────────────────────────┘
-```
+
+- Two deployable artifacts: **backend API image** and **frontend static image** (the latter
+  pending the frontend commit). They are *separate deployables*, not a mesh of microservices —
+  don't oversell them as such.
+- Everything flows through the Git repo: manifests under `gitops/` are what ArgoCD syncs.
+- Standard response envelope: `{"ok": true, "data": ...}` / `{"ok": false, "message": "..."}`.
+
+### Where the data lives per environment
+
+| Environment | Database | Status |
+|---|---|---|
+| Local `docker compose` | MySQL 8.4 container, volume-persisted | ✅ wired, auto-migrated + seeded by `backend/docker/entrypoint.sh` |
+| Kind cluster (`gitops/overlays/dev` etc.) | in-cluster MySQL StatefulSet + PVC | ⚠️ verified locally, manifests in repo |
+| AWS (Terraform `env/prod`) | RDS MySQL, private subnets, encrypted, Secrets Manager password | ❌ code validated in CI, never applied |
+
+Note the honest mismatch: the K8s manifests talk to the **in-cluster** MySQL StatefulSet, while
+Terraform provisions **RDS**. Wiring the app to RDS (via the ExternalSecrets manifests already
+in `gitops/base/external-secrets/`, which are not yet part of the kustomize build) is on the
+roadmap.
 
 ---
 
 ## 💻 Tech Stack
 
-| Layer | Technology | Version | Purpose |
-|-------|-----------|---------|---------|
-| **Frontend** | React | 19 | Modern UI framework |
-| | Vite | 5+ | Fast build tool & dev server |
-| | TypeScript | 5+ | Type-safe JavaScript |
-| | Tailwind CSS | 3+ | Styling framework |
-| **Backend** | Laravel | 13 | PHP web framework |
-| | PHP | 8.3 | Server-side runtime |
-| | MySQL | 8.0 | Relational database |
-| **Containerization** | Docker | 20+ | Container runtime |
-| | Docker Compose | 2+ | Local orchestration |
-| **Orchestration** | Kubernetes (EKS) | 1.28+ | Production orchestration |
-| | Terraform | 1.3+ | Infrastructure as Code |
-| | Helm | 3+ | Kubernetes package manager |
-| **GitOps** | ArgoCD | 2.8+ | Continuous delivery |
-| | Kustomize | 5+ | Kubernetes templating |
-| **Monitoring** | CloudWatch | — | AWS metrics & logs |
-| | Prometheus | 2.45+ | Metrics collection |
-| **CI/CD** | GitHub Actions | — | Automation ready |
+| Layer | Technology | Note |
+|-------|-----------|------|
+| Frontend | React 19 + Vite + TypeScript | local copy — not yet committed (see reality check) |
+| Backend | Laravel 13, PHP 8.3 | pure JSON API, `routes/api.php` |
+| Database | MySQL 8 | Eloquent, string PKs, JSON columns |
+| Containers | Docker (multi-stage), Compose | non-root fpm image, entrypoint auto-setup |
+| Orchestration | Kubernetes | local Kind (verified), AWS EKS (Terraform, unapplied) |
+| IaC | Terraform ≥1.3 | vpc/eks/rds modules, dev/stag/prod, S3+DynamoDB state bootstrap |
+| GitOps | ArgoCD + Kustomize | App-of-Apps, RBAC project, 3 overlays |
+| CI | GitHub Actions | `.github/workflows/ci.yml` — added 2026-09-01 |
+| Load test | k6 | `load-test.js` targets the frontend URL — only runnable once frontend is served |
 
 ---
 
-## ✨ Features
+## 🚦 CI pipeline (GitHub Actions)
 
-### 🛒 E-commerce Capabilities
+`.github/workflows/ci.yml` runs on push (`main`, `dev`), every PR, and manual dispatch:
 
-**Public Storefront**
-- 📱 Product browsing with advanced filters (brand, price, specs)
-- ⚖️ Product comparison tool
-- 🔄 Trade-in assessment
-- 🛒 Shopping cart with persistent storage
-- 💳 Checkout process with order placement
-- 📞 Contact form with inquiry management
-- 📋 Privacy & terms pages
+| Job | Gate | What it proves |
+|---|---|---|
+| `backend` | ✅ fails CI | Pint style, Larastan level 7, PHPUnit suite (sqlite in-memory, `RefreshDatabase`) |
+| `docker-build` | ✅ fails CI | `backend/Dockerfile` actually builds; image smoke-runs `php -v` |
+| `frontend` | honest skip | Builds `frontend/` **if** it is committed; prints a notice until then (it currently isn't) |
+| `k8s-manifests` | ✅ fails CI | `kustomize build` of dev/staging/prod overlays renders |
+| `terraform` | ✅ fails CI | `fmt -check`, `init -backend=false`, `validate` for dev/stag/prod + remote-backend |
+| `repo-audit` | report only | Writes a status table into the run summary: frontend missing? auth? transactions? LICENSE? — it never fails, it just tells the truth |
 
-**Admin Dashboard** (`http://localhost:3000#admin`)
-- 📊 Analytics Dashboard (KPIs: revenue, orders, products, inquiries)
-- 📦 Inventory Management (CRUD operations)
-- 📋 Order Management (view, update status, track shipments)
-- 💬 Inquiry Management (respond to customer inquiries)
-- 🎟️ Promo Code Management
-- 👥 User Management ready for Sanctum auth
+Check the actual current state: repo → **Actions** tab → latest run. Green means the gates
+above pass at that commit; anything listed red in `repo-audit` is a known gap, not a flake.
 
-### 🔧 Technical Features
-
-**Microservices**
-- Fully decoupled frontend and backend
-- Independent deployment and scaling
-- REST API with standardized response format
-- Graceful degradation (fallback to mock data when API unavailable)
-
-**Database**
-- Normalized schema with migrations
-- Automatic seeding with sample data
-- Support for complex queries (filtering, pagination, aggregation)
-- Transaction support for order placement
-
-**Frontend**
-- Single Page Application (SPA) with client-side routing
-- Dynamic data binding with React hooks
-- TypeScript for type safety
-- Responsive design (mobile-first)
-- Local storage for cart persistence
-
-**Backend**
-- RESTful API design with proper HTTP status codes
-- CORS configuration for development
-- Model serialization with `toApi()` methods
-- Custom response helpers for consistent formatting
-- Eloquent ORM with relationships
-
-### 🚀 DevOps & Infrastructure
-
-**Local Development**
-- Docker Compose for single-command setup
-- Auto-running migrations and seeds
-- Volume mounts for hot reload
-- Network isolation
-
-**Container Registry**
-- Multi-stage Docker builds for optimization
-- Image scanning ready
-- Push to registries (Docker Hub, ECR)
-- Production-grade base images
-
-**Kubernetes**
-- EKS cluster provisioning via Terraform
-- Auto-scaling worker nodes
-- StatefulSet for MySQL
-- ConfigMaps and Secrets for configuration
-- NetworkPolicies for security
-- RBAC policies
-
-**Infrastructure as Code**
-- Terraform modules for VPC, EKS, RDS
-- Multi-environment configurations (dev, staging, prod)
-- Automated backups and disaster recovery
-- CloudWatch monitoring and alarms
-
-**GitOps**
-- ArgoCD application management
-- Kustomize overlays per environment
-- Automated syncing from Git
-- RBAC and access control
-- App-of-Apps pattern
+Dependencies are refreshed by **Dependabot** (`.github/dependabot.yml`: actions + composer).
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start (backend API)
 
 ### Prerequisites
 
-Choose your setup method:
+Docker (or PHP 8.3 + Composer + MySQL 8), Linux/macOS/WSL.
 
-#### **Option 1: Docker (Recommended for beginners) ⭐**
+### Option A — Docker (API + MySQL)
 
 ```bash
-# Requirements
-- Docker 20.10+
-- Docker Compose 2.0+
-
-# 1. Clone and navigate to project
-git clone <repo-url>
-cd mxmobilz
-
-# 2. Start all services
-docker compose up --build
-
-# 3. Access the application
-- Frontend: http://localhost:3000
-- API: http://localhost:8000/api
-- Admin: http://localhost:3000#admin
+cp .env.example .env          # mysql root/user/password for the compose stack
+docker compose up -d --build backend-app backend-nginx mysql
+# NOTE: do NOT run plain `docker compose up` yet — the front-end-app service builds
+# from ./frontend/Dockerfile, which is still missing from the repo (see reality check).
+curl localhost:8000/api/health
+curl localhost:8000/api/products
 ```
 
-✨ **First run automatically:**
-- Creates MySQL database
-- Runs migrations
-- Seeds sample data
+The backend container auto-waits for MySQL, runs `migrate --force`, and seeds only when the
+database is empty (`backend/docker/entrypoint.sh`).
 
-#### **Option 2: Local Development (Advanced)**
-
-**Requirements:**
-- PHP 8.3 with extensions (pdo_mysql, json, zip, gd)
-- Composer 2.5+
-- Node.js 18+
-- MySQL 8.0+
-- npm or yarn
+### Option B — Bare metal
 
 ```bash
-# 1. Clone repository
-git clone <repo-url>
-cd mxmobilz
-
-# 2. Setup Database
-mysql -u root -p << EOF
-CREATE DATABASE mxmobilz_db;
-CREATE USER 'mxmobilz'@'localhost' IDENTIFIED BY 'mxmobilzsecret';
-GRANT ALL PRIVILEGES ON mxmobilz_db.* TO 'mxmobilz'@'localhost';
-FLUSH PRIVILEGES;
-EOF
-
-# 3. Setup Backend API
 cd backend
-composer install
-cp .env.example .env
+composer install              # or: composer setup
+cp .env.example .env          # point DB_* at a local MySQL (or switch to sqlite for a taste)
 php artisan key:generate
 php artisan migrate --seed
-php artisan serve
-
-# 4. Setup Frontend (in new terminal)
-cd frontend
-npm install
-npm run dev
-
-# 5. Open browser
-- Frontend: http://localhost:3000
-- API: http://localhost:8000/api
+php artisan serve             # http://localhost:8000/api
+php artisan test              # the CI test suite, same as GitHub Actions runs
 ```
 
-#### **Option 3: Production Kubernetes (Advanced)**
+### Frontend
+
+Not in this repo yet. Until `frontend/` is committed, there is no storefront to start;
+`AGENTS.md` documents what the local copy does (landing/shop/compare/trade-in/cart/checkout/
+contact + admin dashboard, Vite proxy `/api` → `:8000`).
+
+---
+
+## 📡 API reference
+
+Implemented in `backend/routes/api.php` — this table matches the code, endpoint-for-endpoint.
+**All routes are currently public (no auth) — see known issues.**
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/api/health` | liveness |
+| GET, POST | `/api/products` | list supports `?brand=`, `?search=`, `?featured=1`; create takes camelCase payload, id defaults to a slug |
+| GET, PUT/PATCH, DELETE | `/api/products/{id}` | `{ok:false, message}` 404 on unknown id |
+| GET, POST | `/api/orders` | list `?status=`; create persists shipping + line items (currently **not** wrapped in a DB transaction) |
+| PATCH | `/api/orders/{id}` | status (Pending/Processing/Shipped/Delivered/Cancelled) + tracking |
+| GET, POST | `/api/inquiries` | contact form; id `INQ-xxx` |
+| PATCH, DELETE | `/api/inquiries/{id}` | |
+| GET, POST, PUT/PATCH, DELETE | `/api/promos` | code uppercased, unique |
+| GET | `/api/stats` | admin KPIs: revenue, counts, avg order value, low-stock, recent orders/inquiries |
+
+Laravel also serves `/up`. See [docs/architecture.md](docs/architecture.md) for the data flow.
+
+---
+
+## 🧪 Testing
+
+Reality: before 2026-09-01 this project had **zero tests** (phpunit.xml pointed at a
+non-existent `tests/` dir and the only "CI" sat in the wrong folder). That is fixed:
+
+- `backend/tests/Feature/` — 5 suites / ~15 assertions groups covering every controller's
+  happy path + validation/404 paths (health, product CRUD + filters, order place/update/filter,
+  inquiry + stats math, promo unique rules).
+- Run locally: `cd backend && php artisan test` (sqlite in-memory — no database needed).
+- What is **not** covered yet: seeders idempotency under MySQL, auth (doesn't exist), the
+  frontend (not in repo), k8s manifests beyond rendering. No coverage threshold is enforced —
+  honest starting point, expand it with every feature.
+
+---
+
+## 🐳 Docker & Kubernetes & GitOps
+
+### Containers (in repo)
+
+- `backend/Dockerfile` — multi-stage: `composer:2.8` deps (`--no-dev`) → `php:8.3-fpm-bookworm`
+  + pdo_mysql/zip/gd/opcache, `USER www-data`, ~767MB (was 1.05GB; walk-through in
+  `docs/docker.md`, incident history in `docs/docker-trouble.md`).
+- Root `docker-compose.yml` — `mysql` (healthcheck + depends_on) → `backend-app` (fpm:9000)
+  → `backend-nginx` (:8000) → (pending) `front-end-app` (:3000 with `/api` proxy via
+  `BACKEND_URL`).
+
+### Kubernetes (`gitops/`)
+
+Kustomize base: namespace, MySQL StatefulSet+Secret, backend Deployment (nginx sidecar + FPM,
+probes on `/api/products`), frontend Deployment, ingress, NetworkPolicies. Overlays
+`dev`/`staging`/`prod` patch replicas/config/secrets. ArgoCD: `mxmobilz` AppProject with
+roles, root App-of-Apps → per-env Applications tracking `main`.
+
+Verified **locally** (not by CI): Kind 3-node cluster + ArgoCD sync + `/api/products` 200
+end-to-end — procedure in `docs/k8s-production-setup.md`, `docs/gitops-setup.md`,
+`docs/k8s-mysql-setup.md`. Bootstrapping ArgoCD on a fresh cluster:
 
 ```bash
-# See docs/k8s-production-setup.md for full guide
+kubectl cluster-info && bash gitops/bootstrap-argocd.sh   # installs ArgoCD, applies project + root app
+```
+
+Caveats to know about: images are pulled from `hamzasarfraz862/*` on Docker Hub pinned to
+`1.0.0` while compose builds `1.0.2` — there is **no registry-push automation**, so K8s
+manifests go stale after any backend change (roadmap item). `mysql-secret.yaml` in `base/mysql`
+holds dev-only placeholder passwords — replace via overlays/ExternalSecrets; do not put real
+secrets in Git.
+
+### EKS
+
+Nothing is running on AWS. `infra/` is validated code only (fmt/validate in CI). To attempt a
+real apply you need an AWS account, then:
+
+```bash
 cd infra
-
-# Initialize Terraform backend
-./scripts/init.sh
-
-# Deploy to AWS EKS
-./scripts/deploy.sh -e dev -a apply
-
-# Configure kubectl
+./scripts/init.sh                      # bootstraps S3 state bucket + DynamoDB lock (reads confirmation)
+./scripts/deploy.sh -e dev -a plan     # plan/apply/destroy per env
 aws eks update-kubeconfig --region us-east-1 --name mxmobilz-dev
-kubectl get nodes
-
-# Deploy application via ArgoCD
-cd ../gitops
-kubectl apply -f bootstrap-argocd.sh
 ```
 
 ---
 
-## 📁 Project Structure
+## 🛠️ Infrastructure as Code (Terraform)
 
-```
-mxmobilz/
-├── frontend/                  # React + Vite + TypeScript
-│   ├── src/
-│   │   ├── components/       # Reusable React components
-│   │   ├── pages/            # Page components
-│   │   ├── api.ts            # API client (single source of truth)
-│   │   ├── types.ts          # TypeScript interfaces
-│   │   └── data/mockData.ts  # Sample data for fallback
-│   ├── Dockerfile            # Production container image
-│   ├── vite.config.ts        # Vite config with API proxy
-│   └── package.json
-│
-├── backend/                   # Laravel 13 + PHP 8.3
-│   ├── app/
-│   │   ├── Http/Controllers/ # API endpoints
-│   │   ├── Models/           # Eloquent models + serializers
-│   │   └── Support/          # Helper classes
-│   ├── database/
-│   │   ├── migrations/       # Schema definitions
-│   │   └── seeders/          # Sample data
-│   ├── routes/api.php        # API routes
-│   ├── Dockerfile            # Multi-stage production build
-│   ├── docker/entrypoint.sh  # Auto-setup on first run
-│   └── composer.json
-│
-├── infra/                     # Infrastructure as Code
-│   ├── module/
-│   │   ├── vpc/              # AWS VPC, subnets, security groups
-│   │   ├── eks/              # Kubernetes cluster provisioning
-│   │   └── rds/              # MySQL database setup
-│   ├── env/
-│   │   ├── dev/              # Development environment
-│   │   ├── stag/             # Staging environment
-│   │   └── prod/             # Production environment
-│   ├── scripts/
-│   │   ├── init.sh           # Backend initialization
-│   │   └── deploy.sh         # Deployment automation
-│   ├── Makefile              # Convenient commands
-│   └── remote-backend/       # S3 state management
-│
-├── gitops/                    # ArgoCD & Kustomize
-│   ├── argocd/
-│   │   ├── applications/     # ArgoCD Application definitions
-│   │   └── projects/         # RBAC projects
-│   ├── base/                 # Kustomize base manifests
-│   └── overlays/
-│       ├── dev/              # Dev-specific patches
-│       ├── stag/             # Staging-specific patches
-│       └── prod/             # Prod-specific patches
-│
-├── docs/                      # Comprehensive documentation
-│   ├── README.md             # This file
-│   ├── architecture.md       # System design details
-│   ├── k8s-production-setup.md # Kubernetes deployment guide
-│   ├── gitops-setup.md       # ArgoCD & GitOps workflow
-│   ├── deployment.md         # Deployment strategies
-│   ├── security.md           # Security best practices
-│   ├── disaster-recovery.md  # Backup & recovery procedures
-│   ├── monitoring.md         # Observability setup
-│   ├── troubleshooting.md    # Common issues & solutions
-│   └── docker.md             # Docker setup details
-│
-├── docker-compose.yml        # Local development orchestration
-└── AGENTS.md                 # Project status & session notes
-```
+- `infra/module/vpc` — VPC, public/private subnets, NAT, SGs (public→443, EKS nodes, RDS only
+  from EKS SG), k8s-style subnet tags. Modules are provider-free by design now — a committed
+  LocalStack override in the module was found and removed 2026-09-01 (it would have pointed
+  every environment at `localhost:4566`).
+- `infra/module/eks` — cluster + managed node groups (scaling config per env), control-plane
+  logs, OIDC, IMDSv2 required, CloudWatch retention.
+- `infra/module/rds` — MySQL 8, encrypted, backups, Performance Insights, CloudWatch log
+  groups, Secrets Manager password rotation-free storage. The `aws_db_instance` ↔
+  `aws_secretsmanager_secret_version` cycle was fixed 2026-09-01 (it failed `terraform
+  validate` before that).
+- `infra/env/{dev,stag,prod}` — three isolated root stacks with S3 remote state;
+  `terraform.tfvars.example` per env. Staging is named `stag/` (folder) but tags `staging`.
+- `infra/remote-backend` — one-time state bootstrap (bucket + versioning + object lock + KMS
+  + DynamoDB lock table + access logging); its LocalStack-only provider block (hard-coded
+  fake credentials) was removed 2026-09-01.
+
+**What has not been done:** no `terraform plan` against a real account, no cost-tested
+node sizing, no state migration (remote backend config is aspirational until
+`init.sh` has been run by you).
 
 ---
 
-## 🚀 Deployment
+## 🔒 Security posture (honest)
 
-### Local (Development)
+**Implemented:** request validation on every write endpoint; mass-assignment whitelists;
+non-root containers; MySQL not publicly reachable in compose/K8s (NetworkPolicies); secrets
+not committed (dev placeholders only); Terraform: encrypted RDS + KMS-encrypted state bucket,
+IMDSv2 enforced, private subnets for nodes/DB; Dependabot; CI gates on lint/static analysis.
 
-```bash
-# Single command to spin up entire stack
-docker compose up --build
-```
+**Not implemented (would block a real store):**
 
-### Staging/Production (AWS EKS)
+1. **No authentication/authorization** — anyone can `POST/PUT/DELETE` products, orders, promos.
+   Sanctum package is installed but no routes use it. Treat the API as read-only demo.
+2. **Client-trusted money** — order `subtotal/totalAmount` come from the request; prices are
+   never recomputed server-side, no stock check/decrement, no payment verification.
+3. **No rate limiting / WAF / audit log.**
+4. **CORS is `*`, `APP_DEBUG=true` in the example env** — both must change for any real deploy.
+5. ID generation `MX-` + 5 random digits (collision → duplicate-key 500) and
+   `INQ-` + 3 digits; needs a real sequence/ULID strategy.
 
-See [docs/k8s-production-setup.md](docs/k8s-production-setup.md) for comprehensive guide:
-
-1. **Infrastructure Setup** (Terraform)
-   ```bash
-   cd infra/env/prod
-   terraform init && terraform plan && terraform apply
-   ```
-
-2. **ArgoCD Deployment** (GitOps)
-   ```bash
-   cd gitops
-   ./bootstrap-argocd.sh
-   kubectl apply -f argocd/applications/mxmobilz-prod.yaml
-   ```
-
-3. **Application Access**
-   - Get ingress IP: `kubectl get ingress`
-   - Configure DNS: Point domain to ingress IP
-   - Access via: `https://mxmobilz.yourdomain.com`
-
-**For detailed deployment strategies:** See [docs/deployment.md](docs/deployment.md)
+Details & intended fixes: [docs/security.md](docs/security.md) (marked there as plan, not
+status), roadmap below.
 
 ---
 
-## 📚 Documentation
+## 🐞 Known issues & limitations
 
-Complete documentation for every aspect of the project:
+Tracked honestly (full audit with evidence: [docs/STATUS.md](docs/STATUS.md)):
 
-| Document | Purpose |
-|----------|---------|
-| [architecture.md](docs/architecture.md) | System design, API contract, data flow |
-| [k8s-production-setup.md](docs/k8s-production-setup.md) | Kubernetes deployment on AWS EKS |
-| [gitops-setup.md](docs/gitops-setup.md) | ArgoCD, Kustomize, continuous deployment |
-| [deployment.md](docs/deployment.md) | Multi-environment deployment strategies |
-| [security.md](docs/security.md) | Security hardening, best practices, compliance |
-| [disaster-recovery.md](docs/disaster-recovery.md) | Backup procedures, recovery strategies, RTO/RPO |
-| [monitoring.md](docs/monitoring.md) | CloudWatch, Prometheus, logging setup |
-| [docker.md](docs/docker.md) | Container build process, optimization |
-| [troubleshooting.md](docs/troubleshooting.md) | Common issues and solutions |
-| [runbook.md](docs/runbook.md) | Operational procedures |
+1. `frontend/` is empty in the repo → full-stack compose fails at build; UI claims unverifiable. **(Top priority: commit the local app.)**
+2. No auth, no server-side price/stock logic, order write not transactional (a failed line item can orphan a half-saved order).
+3. `POST /api/products` used to be broken (the `id` was not mass-assignable on the model → 500); fixed 2026-09-01 along with the first regression test for it.
+4. K8s images drift from code (tag `1.0.0` vs compose `1.0.2`); no publish workflow.
+5. Terraform never applied; EKS 1.28 baseline is old — pin a supported version before applying.
+6. `gitops/base/external-secrets/` manifests exist but are not in the kustomize build; `EnvironmentVariable`/ClusterSecretStore setup not done.
+7. Docs in `docs/` are a mix of *verified logs* (docker/k8s/gitops/troubleshooting) and *planned procedures* (deployment/runbook/security/DR/monitoring) — each header says which.
+8. No TLS (ingress annotates ssl-redirect off), no backups beyond RDS config in unapplied TF, no real monitoring stack running.
 
----
+## 🗺️ Roadmap (real next steps, in order)
 
-## 💻 Development Workflows
-
-### Adding a New Feature
-
-1. **Create feature branch**
-   ```bash
-   git checkout -b feature/new-feature
-   ```
-
-2. **Make changes**
-   - Frontend: `cd frontend && npm run dev`
-   - Backend: `cd backend && php artisan serve`
-
-3. **Test locally**
-   ```bash
-   # Frontend tests
-   npm run test
-   # Backend tests
-   php artisan test
-   ```
-
-4. **Create commit**
-   ```bash
-   git add .
-   git commit -m "feat: add new feature"
-   ```
-
-5. **Push and create PR**
-   ```bash
-   git push origin feature/new-feature
-   # Create Pull Request on GitHub
-   ```
-
-6. **CI/CD runs automatically** (GitHub Actions)
-   - Lint checks
-   - Type checking
-   - Unit tests
-   - Build Docker images
-   - Deploy to staging
-
-7. **Merge to main**
-   - ArgoCD syncs production automatically
-
-### Database Migrations
-
-```bash
-# Create new migration
-php artisan make:migration create_table_name
-
-# Run migrations
-php artisan migrate
-
-# Rollback
-php artisan migrate:rollback
-```
-
-### API Development
-
-All API endpoints use standardized response format:
-
-```json
-{
-  "ok": true,
-  "data": { /* ... */ }
-}
-```
-
-Error response:
-
-```json
-{
-  "ok": false,
-  "message": "Error description",
-  "errors": { /* validation errors */ }
-}
-```
-
-See [docs/architecture.md](docs/architecture.md#api-contract) for full endpoint reference.
+- [ ] Commit `frontend/` so compose + CI frontend job + reviewer flow all work
+- [ ] Sanctum auth: register/login + `auth:sanctum` on mutation routes, admin role gate
+- [ ] Wrap order creation in `DB::transaction`, recompute totals server-side, decrement stock
+- [ ] Real order-id strategy (ULID) + unique-violation handling
+- [ ] `docker-publish.yml` workflow (SHA-tagged images to a registry) + bump gitops image tags from CI
+- [ ] Wire ExternalSecrets + RDS into `gitops` for prod; cert-manager TLS
+- [ ] First real `terraform apply` in dev (smallest nodeset), tear down after demo
+- [ ] HPA + metrics-server, Prometheus stack, DB backup drill, seed tests against MySQL service container in CI
+- [ ] Rate limiting (throttle), pagination on list endpoints, pagination/sorting for admin grids
 
 ---
 
-## 🔒 Security & Best Practices
+## 📚 Documentation index
 
-✅ **Implemented:**
-- Environment variable management (.env files)
-- CORS configuration
-- RBAC in Kubernetes
-- NetworkPolicies
-- Secrets in AWS Secrets Manager
-- Encrypted database connections
-- Automated backups with encryption
-- Security group isolation
-- IMDSv2 enforcement
-
-📋 **Recommended for Production:**
-- Enable Laravel Sanctum for authentication
-- Set up SSL/TLS certificates (cert-manager)
-- Configure WAF rules
-- Enable VPC Flow Logs
-- Set up CloudTrail logging
-- Implement API rate limiting
-- Enable audit logging
-
-See [docs/security.md](docs/security.md) for detailed security practices.
+| Doc | Reality level | Purpose |
+|---|---|---|
+| [docs/STATUS.md](docs/STATUS.md) | ✅ audit record | Full claims-to-facts table, how to re-verify anything here |
+| [docs/architecture.md](docs/architecture.md) | ✅ code-accurate | Services, API contract, data flow |
+| [docs/docker.md](docs/docker.md) | ✅ verified locally | Images, multi-stage build, registry push procedure (manual) |
+| [docs/docker-trouble.md](docs/docker-trouble.md) | ✅ verified | Real incidents + fixes (compose/nginx/volume/image size) |
+| [docs/k8s-production-setup.md](docs/k8s-production-setup.md) | ✅ verified on Kind | The actual local K8s build-out, WHAT/WHY/VERIFY per manifest |
+| [docs/k8s-mysql-setup.md](docs/k8s-mysql-setup.md) | ✅ verified on Kind | MySQL StatefulSet journey |
+| [docs/gitops-setup.md](docs/gitops-setup.md) | ✅ verified on Kind | ArgoCD, App-of-Apps, overlays, RBAC |
+| [docs/argocd.md](docs/argocd.md) | ✅ verified on Kind | k8s/→gitops/ migration log + operations |
+| [docs/troubleshooting.md](docs/troubleshooting.md) | ✅ verified | Known failures & fixes |
+| [docs/deployment.md](docs/deployment.md) | ⚠️ planned procedures | Multi-env deploy playbook (untested against AWS) |
+| [docs/runbook.md](docs/runbook.md) | ⚠️ planned procedures | Ops routines (not exercised in production) |
+| [docs/security.md](docs/security.md) | ⚠️ mostly planned | Hardening plan + what is actually enforced today |
+| [docs/disaster-recovery.md](docs/disaster-recovery.md) | ⚠️ planned, never drilled | RTO/RPO + recovery playbooks |
+| [docs/monitoring.md](docs/monitoring.md) | ⚠️ planned | CloudWatch/Prometheus setup steps (no stack running) |
+| [AGENTS.md](AGENTS.md) | ✅ session memory | Chronological project log incl. local-only work |
+| [FINAL_CHECKLIST.md](FINAL_CHECKLIST.md) | ✅ rewritten honest | What's done/not-done (this used to be 100% ✅ — see STATUS) |
+| [PROJECT_SUMMARY.md](PROJECT_SUMMARY.md) / [INTERVIEW_TALKING_POINTS.md](INTERVIEW_TALKING_POINTS.md) | ✅ rewritten honest | Portfolio/interview framing based on real state |
 
 ---
 
-## 📊 Monitoring & Logging
+## 🤝 Contributing / conventions
 
-### CloudWatch Integration
-
-```bash
-# View EKS cluster logs
-aws logs tail /aws/eks/mxmobilz-prod/cluster --follow
-
-# View RDS logs
-aws logs tail /aws/rds/mysql/mxmobilz-prod-mysql/error --follow
-
-# View application logs
-kubectl logs -f deployment/backend
-```
-
-### Prometheus Metrics (Optional)
-
-```bash
-# Deploy Prometheus stack
-helm install prometheus prometheus-community/kube-prometheus-stack \
-  -n monitoring --create-namespace
-
-# Port-forward to access
-kubectl port-forward -n monitoring svc/prometheus 9090:9090
-```
-
----
-
-## 🤝 Contributing
-
-### Code Standards
-
-- **Frontend**: React hooks, functional components, TypeScript strict mode
-- **Backend**: PSR-12 coding standards, SOLID principles
-- **Terraform**: Standard module structure, proper variable documentation
-- **Kubernetes**: Best practices, security defaults
-
-### Pull Request Process
-
-1. Fork repository
-2. Create feature branch
-3. Write tests
-4. Update documentation
-5. Submit PR with detailed description
-6. Address review comments
-7. Squash and merge
-
----
-
-## 📈 Roadmap
-
-- [ ] Authentication (Laravel Sanctum + JWT)
-- [ ] Payment Gateway Integration (Stripe)
-- [ ] Email Notifications
-- [ ] User Profiles & Order History
-- [ ] Advanced Search (Elasticsearch)
-- [ ] Analytics & Reporting
-- [ ] Mobile App (React Native)
-- [ ] Microservices (separate services for inventory, orders, payments)
-
----
+- Backend: PSR-12 via Pint, Larastan level 7 — CI enforces both; write a feature test with
+  every endpoint change.
+- Keep docs honest: when you add something, update [docs/STATUS.md](docs/STATUS.md) in the
+  same PR (✅ = someone can verify it from this repo or a link).
+- PRs run the same CI as this README describes; don't merge red.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).
 
----
-
-## 👨‍💻 Author & Contact
-
-**Project:** Mxmobilz - Cloud-Native E-commerce Platform  
-**Built with:** React, Laravel, Kubernetes, Terraform, ArgoCD  
-**Portfolio Project:** ✅ Production-ready, interview-ready  
-
-**Key Achievements:**
-- ✅ Full-stack microservices architecture
-- ✅ Cloud-native deployment on AWS EKS
-- ✅ Infrastructure as Code with Terraform
-- ✅ GitOps continuous delivery with ArgoCD
-- ✅ Enterprise security practices
-- ✅ Comprehensive documentation
-
----
-
-## 🙋‍♂️ FAQ
-
-**Q: Can I deploy this to other cloud providers?**  
-A: Yes! The Kubernetes manifests are cloud-agnostic. You can run on GKE, AKS, or on-premises Kubernetes. Only Terraform needs cloud-specific updates.
-
-**Q: How much does it cost to run on AWS?**  
-A: Approximately:
-- Dev: $30-50/month
-- Staging: $100-150/month
-- Production: $200-300/month
-
-**Q: Is this production-ready?**  
-A: Yes! All components follow production best practices. Add authentication (Sanctum), SSL/TLS, and WAF rules for your use case.
-
-**Q: Can I use this for learning?**  
-A: Absolutely! This project is designed to teach cloud-native architecture, DevOps practices, and modern web development.
-
----
-
-## 📞 Support & Questions
-
-For issues, questions, or improvements:
-
-1. Check [docs/troubleshooting.md](docs/troubleshooting.md)
-2. Review existing GitHub issues
-3. Create new issue with detailed description
-4. Submit PR for improvements
-
----
-
-**Last Updated:** September 2, 2026  
-**Status:** ✅ Production Ready | 🚀 Continuously Improved
-Override the API base with `VITE_API_URL` if you do not use the proxy.
-
-## Environment
-
-- Backend: `backend/.env` (never commit). Key values: `DB_CONNECTION=mysql`, `DB_DATABASE=mxmobilz_db`,
-  `DB_USERNAME=mxmobilz`, `DB_PASSWORD=mxmobilzsecret`.
-- Frontend: `VITE_API_URL` (default `/api`), `VITE_PROXY_TARGET` (default `http://localhost:8000`).
-
-## Project Memory
-
-See `AGENTS.md` — keep it updated each session so work is never lost.
-
-## Docs
-
-- `docs/architecture.md` — services, API endpoints, data flow.
-- `docs/deployment.md`, `docs/runbook.md`, `docs/security.md`, `docs/disaster-recovery.md`,
-  `docs/troubleshooting.md` — cloud-native ops (fill per environment).
+**Author:** Muhammad Hamza. This repository documents a learning/portfolio build-out: the
+journey logs (docker/K8s/GitOps docs, AGENTS.md) are the point.

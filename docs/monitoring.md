@@ -1,6 +1,8 @@
 
 # Monitoring, Logging & Observability
 
+> **⚠️ Status banner (2026-09-01):** setup guide for stacks that are **not running** anywhere today (no CloudWatch targets — Terraform never applied; no Prometheus/Grafana deployment). Commands below are the intended path, documented but unexecuted.
+
 ## Overview
 
 This guide covers the complete monitoring and observability strategy for Mxmobilz, including CloudWatch setup, Prometheus integration, alerting, and dashboarding.

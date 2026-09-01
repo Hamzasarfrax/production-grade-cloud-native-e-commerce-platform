@@ -36,7 +36,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  */
 #[Fillable([
-    'name', 'brand', 'model', 'os', 'price', 'original_price', 'rating', 'reviews_count',
+    'id', 'name', 'brand', 'model', 'os', 'price', 'original_price', 'rating', 'reviews_count',
     'in_stock', 'storage_options', 'color_options', 'ram', 'battery', 'camera', 'processor',
     'display', 'image', 'images', 'condition', 'is_5g', 'is_featured', 'is_best_seller',
     'description', 'specs',

@@ -1,0 +1,12 @@
+# Local env / secrets
+.env
+*.env.local
+
+# OS / editor noise
+.DS_Store
+.idea/
+.vscode/
+
+# Terraform (per-env .gitignore bhi hai)
+.terraform/
+*.tfstate*

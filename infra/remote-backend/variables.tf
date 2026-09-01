@@ -4,6 +4,12 @@ variable "s3_bucket_name" {
   default     = "remote-backed-s3-bucket"
 }
 
+variable "region" {
+  description = "AWS region for the state bucket, lock table and KMS key."
+  type        = string
+  default     = "us-east-1"
+}
+
 variable "env" {
   description = "Environment name used for tagging resources."
   type        = string

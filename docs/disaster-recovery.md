@@ -1,5 +1,7 @@
 # Disaster Recovery & Business Continuity Plan
 
+> **⚠️ Status banner (2026-09-01):** design document — backup/RTO/RPO procedures have **never been drilled**: no live AWS instance exists yet (RDS config is Terraform-only, unapplied). The only automatic guarantee today is CI (`kustomize build`, `terraform validate`).
+
 ## Overview
 
 This guide covers disaster recovery (DR) procedures, backup strategies, and recovery time objectives (RTO/RPO) for Mxmobilz platform.

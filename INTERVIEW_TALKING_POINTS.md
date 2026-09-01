@@ -1,14 +1,31 @@
 # 🎯 Interview Talking Points & Project Stories
 
+> **⚠️ Read this banner first (added 2026-09-01).** This file was written when the docs claimed
+> more than the repo proved. The audit ledger is [docs/STATUS.md](docs/STATUS.md); the README and
+> FINAL_CHECKLIST are recalibrated. Before quoting numbers here, quote what you can open on
+> GitHub. Rules of thumb for using the rest of this doc:
+> - "production-ready" in any script below should be said as *"production-patterns / production-grade
+>   setup; not a live production deployment — no public URL, no real traffic"*.
+> - Frontend (React) work is real on the dev machine but **not yet in the repo** — say "built
+>   locally, being committed next" instead of "clone and run".
+> - AWS/Terraform: say "module structure + validated in CI; dev apply is my next planned step" —
+>   never "deployed to EKS".
+> - The best stories are the true ones: CI that never ran (wrong folder, GitHub ignores
+>   `backend/.github/`), tests claimed with zero test files, `POST /api/products` 500 because
+>   `id` wasn't mass-assignable, a LocalStack provider committed inside the VPC module, and a
+>   Terraform circular dependency that broke `validate`. All found by audit, all fixed, all
+>   now CI-gated.
+> Honesty here is the differentiator: most portfolio repos oversell; yours has an audit trail.
+
 ## Overview
-Use these talking points and stories when discussing Mxmobilz in interviews. Each section provides context, achievements, and lessons learned.
+Use these talking points and stories when discussing Mxmobilz in interviews. Each section provides context, achievements, and lessons learned — with the reality caveats from the banner above.
 
 ---
 
 ## 1️⃣ Architecture & Design Decisions
 
 ### Opening Statement
-*"I built Mxmobilz as a full production-ready cloud-native e-commerce platform. The key highlight is that I designed it specifically to follow enterprise best practices across the entire stack - from application code to cloud infrastructure."*
+*"I built Mxmobilz as a cloud-native e-commerce platform to practice production patterns end-to-end: a Laravel API with tests and static analysis, a CI pipeline, multi-stage non-root Docker builds, GitOps with ArgoCD and Kustomize verified on a local Kind cluster, and Terraform for AWS dev/staging/prod that's validated in CI. I'll be direct about what's done: the pipeline and backend are in the repo and green; the storefront was built but isn't committed yet; the AWS stack is written but never applied, which is the next thing I want to pay for and prove."*
 
 ### Key Talking Points
 
@@ -518,9 +535,9 @@ This shows: Defensive programming, multiple verification layers
 
 **Stories to Tell:**
 - How you designed VPC for security
-- How you implemented zero-downtime deployments
-- How you set up disaster recovery
-- How you optimized costs across 3 environments
+- How rolling-update manifests are configured (maxSurge/maxUnavailable, readiness probes) — verified on Kind, honest "not under real traffic"
+- How you set up disaster recovery *procedures* (documented; drill pending because there is no live DB)
+- How you optimized costs across 3 environments (design intent: t3 sizing, dev no Multi-AZ — no bill yet)
 
 ### For Cloud Architect Role
 **Focus On:**
@@ -569,26 +586,51 @@ This shows: Defensive programming, multiple verification layers
 
 ---
 
-## 📊 Quantifiable Results to Share
+## 📊 Numbers you can actually back up (2026-09-01 audit)
 
 ```
-Project Statistics:
-- 3,500+ lines of application code
-- 2 containerized services
-- 3 Terraform modules
-- 3 complete environment configurations
-- 12+ documentation guides (~150 pages)
-- 30+ security hardening measures
-- 5+ automated workflows
-- 99.9% uptime SLA achievable
+Repo-verifiable:
+- 17 API endpoints, ~1.9k PHP LOC (app+routes+config+db)
+- 15 PHPUnit test methods across 5 feature suites — CI-gated
+- 6 CI jobs (backend lint/phpstan/tests, docker build, kustomize 3 overlays,
+  terraform fmt+validate 4 dirs, non-blocking repo audit)
+- 1 backend Dockerfile multi-stage, non-root, 767MB (from 1.05GB — logged in docs/docker-trouble.md)
+- 24 K8s/GitOps manifest files; Kustomize base + dev/staging/prod overlays; ArgoCD App-of-Apps
+- 3 Terraform modules + 3 env stacks + remote-state bootstrap (fmt/validate CI-gated)
+- ~8.8k lines of docs, split "verified log" vs "planned runbook" per file banners
 
-Infrastructure:
-- Deploy time: < 15 minutes (fully automated)
-- Scaling time: < 1 minute (auto-scaling)
-- Backup frequency: Daily
-- Recovery time: < 1 hour
-- Cost: $30-300/month depending on environment
+NOT claimable (say "planned" instead):
+- uptime/SLA percentages, "100% automated deploy", "tested DR", measured scaling times,
+  real cost numbers (no account was billed), "full-stack in repo" (frontend pending commit)
 ```
+
+If an interviewer pushes on scale claims, the answer is: *"This project proves process, not
+scale — correctness gates, GitOps, IaC hygiene on a small app. The numbers I'd quote are test
+counts and pipeline coverage, both visible on GitHub Actions."*
+
+---
+
+## 🧯 "What is NOT done?" — the honest answer section
+
+Interviewers will find the empty `frontend/` in 20 seconds; answer before they ask:
+
+1. **"Frontend?"** — Built locally (React 19/Vite/TS, shop + admin); the repo's `frontend/` is
+   empty because it wasn't committed yet — first roadmap item. Backend contract it plugs into
+   is documented and tested.
+2. **"Auth?"** — None. Sanctum is in the dependency list, but no login routes/middleware exist;
+   that's why there is no public demo URL (the API is writable by anyone today — I won't expose it).
+3. **"Payments?"** — Stripe package required but unused; checkout trusts client totals server-side
+   (known issue #2 in STATUS.md) — a transaction + price recomputation is planned.
+4. **"Real AWS?"** — Terraform validated in CI, never applied (money). Next planned action is a
+   dev apply + teardown documented as a case study.
+5. **"K8s?"** — Kind + ArgoCD full sync, live-verified with logs (2026-08); no cloud cluster, no TLS/HPA.
+6. **"Backups/DR tested?"** — Configured in RDS module, never drilled — no instance exists to restore.
+7. **"Tests?"** — API feature suite added 2026-09-01 (15 methods) and blocking CI; was zero before
+   the audit. Coverage gate not set yet.
+8. **"Monitoring/alerting running?"** — No live stack; CloudWatch/Prometheus are configured/documented.
+
+Owning these is a feature: the docs contain a dated audit ledger (docs/STATUS.md) showing each
+gap, what was fixed, and how to verify — most candidates can't show that.
 
 ---
 

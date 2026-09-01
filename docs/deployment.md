@@ -1,5 +1,12 @@
 # Deployment Strategies & Procedures
 
+> **⚠️ Status banner (2026-09-01):** this is a *planning/runbook document* — the procedures
+> describe intended flows, several of which have **not been executed against real AWS/EKS**
+> (no cluster has ever been provisioned from `infra/`). What is genuinely verified lives in
+> `docs/STATUS.md`, `docs/k8s-production-setup.md` (Kind), `docs/docker.md` and
+> `docs/docker-trouble.md`. Blue-green / CheckoutV1-style examples are illustrative patterns,
+> not code in this repo.
+
 ## Overview
 
 This guide covers deployment strategies for Mxmobilz across different environments (local, staging, production) with emphasis on automation, reliability, and best practices.
@@ -493,8 +500,11 @@ if (config('features.new_checkout_flow')) {
 
 ```bash
 # 1. Deploy database migration
-kubectl apply -f k8s/migrations.yaml
-kubectl wait --for=condition=complete job/db-migration
+# NOTE: a dedicated migration-Job manifest does not exist yet — today migrations run via the
+# backend container's entrypoint (backend/docker/entrypoint.sh). The K8s migration Job is a
+# roadmap item; when added, un-comment the pattern below (path TBD under gitops/base):
+# kubectl apply -f gitops/base/backend/migration-job.yaml
+# kubectl wait --for=condition=complete job/db-migration -n cloud-native-ecomerce-prod
 
 # 2. Deploy new code (supporting both versions)
 kubectl set image deployment/backend \

@@ -1,5 +1,7 @@
 # Operational Runbook
 
+> **⚠️ Status banner (2026-09-01):** planned operations procedures. No live environment exists to run them against (Kind-era commands are logged in `docs/k8s-production-setup.md` / `docs/argocd.md`; AWS commands here are unexecuted). Verified vs planned: `docs/STATUS.md`.
+
 ## Overview
 
 This document contains step-by-step procedures for common operational tasks. Use this as a reference during on-call shifts and for routine maintenance.

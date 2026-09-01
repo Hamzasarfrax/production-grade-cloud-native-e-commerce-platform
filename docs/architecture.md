@@ -9,8 +9,11 @@
 | db      | —       | MySQL 8              | 3306  | internal (api) + host |
 
 - Each service is buildable/runable independently (own Dockerfile, own port, owns its data).
-- `docker-compose.yml` orchestrates all three locally and is the reference for the real
-  deployment (k8s manifests under `k8s/`, ArgoCD under `argocd/`).
+- `docker-compose.yml` orchestrates locally and is the reference for the real
+  deployment (k8s manifests under `gitops/base/`, ArgoCD under `gitops/argocd/`).
+- ⚠️ Reality check (2026-09-01): the `frontend/` directory is empty in this repo — the React
+  app exists only in the developer's local working copy. Until it is committed, only the
+  `api`+`db` row above can be run/reviewed from Git (see `docs/STATUS.md`).
 
 ## API Contract
 
