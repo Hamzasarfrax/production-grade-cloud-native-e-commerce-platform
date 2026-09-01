@@ -1,5 +1,10 @@
 # Mxmobilz — Architecture
 
+> **Full diagram (SVG/PNG, rendered from the 2026-09-02 audit state):**
+> `docs/architecture-diagram.svg` · `docs/architecture-diagram.png` — GitHub renders the PNG
+> inline in file view. It mirrors README → "Architecture" (Mermaid) → the status dots match
+> `docs/STATUS.md`. Keep all four in sync when moving things.
+
 ## Services (Microservices)
 
 | Service | Folder  | Tech                 | Port  | Exposed via |

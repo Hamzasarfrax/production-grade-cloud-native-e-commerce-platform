@@ -29,6 +29,7 @@ docs ko reality-based update karo (jo kaam hua wahi likho, fake nahi). Kiya gaya
   6. LICENSE missing tha MIT badge ke bawajood → MIT LICENSE add. Root `.env.example`
      (compose ${DB_*} interpolation) aur root `.gitignore` add.
 - **Tests added**: `backend/tests/` (TestCase + 5 Feature suites) — pehle ZERO tests the.
+- **Architecture diagram (2026-09-02)**: `docs/architecture-diagram.svg/png` — hand-built SVG (status-dot legend: ✅ repo/CI · ⚠️ local-only · ❌ not-done) + Mermaid version in README (GitHub natively renders). PNG re-render via @resvg/resvg-js. Docs index + architecture.md updated to link it; regenerate both files whenever boxes move.
 - **Docs rewrite**: README (reality-check table), FINAL_CHECKLIST (100%✅ fake → real status),
   PROJECT_SUMMARY + INTERVIEW_TALKING_POINTS (banner + real numbers + "what's NOT done" section),
   docs/*.md stale refs fix + planned-vs-verified banners.

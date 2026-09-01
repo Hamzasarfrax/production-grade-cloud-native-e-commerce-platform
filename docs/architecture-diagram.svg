@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1660" height="930" viewBox="0 0 1660 930" font-family="Segoe UI, Arial, Helvetica, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#475569"/>
+    </marker>
+    <marker id="arrR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1660" height="930" fill="#f8fafc"/>
+  <text x="40" y="42" font-size="24" font-weight="bold" fill="#0f172a">Mxmobilz — Cloud-Native Architecture &amp; Delivery (actual repo state, 2026-09-02)</text>
+  <text x="40" y="64" font-size="13" fill="#475569">Every status dot below is provable from this repo or its linked logs — mirrors the README reality-check table and docs/STATUS.md.</text>
+
+  <!-- legend -->
+  <g font-size="12.5" fill="#334155">
+    <circle cx="1180" cy="40" r="6" fill="#16a34a"/><text x="1192" y="44">in repo &amp; CI-gated / verified</text>
+    <circle cx="1380" cy="40" r="6" fill="#d97706"/><text x="1392" y="44">real but local-only / partial</text>
+    <circle cx="1180" cy="60" r="6" fill="#dc2626"/><text x="1192" y="64">not implemented / never run</text>
+  </g>
+
+  <!-- ================= LANE 1 : request path ================= -->
+  <text x="40" y="100" font-size="15" font-weight="bold" fill="#0f172a">① Application request path</text>
+
+  <!-- Browser -->
+  <rect x="40" y="112" width="150" height="132" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="115" y="160" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">Browser</text>
+  <text x="115" y="182" font-size="11.5" fill="#475569" text-anchor="middle">storefront +</text>
+  <text x="115" y="198" font-size="11.5" fill="#475569" text-anchor="middle">admin UI</text>
+  <line x1="190" y1="178" x2="228" y2="178" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- Frontend -->
+  <rect x="230" y="112" width="320" height="132" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+  <text x="250" y="138" font-size="13.5" font-weight="bold" fill="#713f12">Frontend — React 19 + Vite + TS</text>
+  <text x="250" y="162" font-size="11.5" fill="#475569">SPA: shop, cart, checkout, compare, trade-in, admin</text>
+  <text x="250" y="180" font-size="11.5" fill="#475569">served by nginx :3000, same-origin /api proxy</text>
+  <circle cx="256" cy="206" r="6" fill="#d97706"/><text x="268" y="210" font-size="11.5" fill="#713f12">dev-machine only — frontend/ is empty in Git</text>
+  <text x="250" y="228" font-size="11.5" fill="#64748b">full-stack compose fails until committed (#1 open item)</text>
+  <line x1="550" y1="178" x2="588" y2="178" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- nginx -->
+  <rect x="590" y="112" width="180" height="132" rx="10" fill="#ffffff" stroke="#16a34a" stroke-width="2"/>
+  <text x="610" y="138" font-size="13.5" font-weight="bold" fill="#0f172a">nginx :8000</text>
+  <text x="610" y="162" font-size="11.5" fill="#475569">container: backend-nginx</text>
+  <text x="610" y="180" font-size="11.5" fill="#475569">fastcgi_pass → :9000</text>
+  <circle cx="614" cy="206" r="6" fill="#16a34a"/><text x="626" y="210" font-size="11.5" fill="#14532d">config in repo</text>
+  <line x1="770" y1="178" x2="808" y2="178" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- Laravel -->
+  <rect x="810" y="112" width="330" height="132" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="830" y="138" font-size="13.5" font-weight="bold" fill="#0f172a">Laravel 13 JSON API (PHP-FPM)</text>
+  <text x="830" y="162" font-size="11.5" fill="#475569">5 controllers · 17 endpoints · validation on writes</text>
+  <text x="830" y="180" font-size="11.5" fill="#475569">{"ok":true,"data":…} envelope · /api/health + /up</text>
+  <text x="830" y="198" font-size="11.5" fill="#475569">entrypoint: wait DB → migrate → seed-if-empty</text>
+  <circle cx="834" cy="222" r="6" fill="#16a34a"/><text x="846" y="226" font-size="11.5" fill="#14532d">5 test suites, Larastan L7 — CI-gated</text>
+  <line x1="1140" y1="178" x2="1178" y2="178" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <!-- MySQL -->
+  <rect x="1180" y="112" width="440" height="132" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="1200" y="138" font-size="13.5" font-weight="bold" fill="#0f172a">MySQL 8 — one schema, three homes</text>
+  <circle cx="1204" cy="162" r="6" fill="#16a34a"/><text x="1216" y="166" font-size="11.5" fill="#14532d">compose container + volume, auto-seeded (works today)</text>
+  <circle cx="1204" cy="186" r="6" fill="#d97706"/><text x="1216" y="190" font-size="11.5" fill="#713f12">Kind: StatefulSet + PVC (local-verified Aug 2026)</text>
+  <circle cx="1204" cy="210" r="6" fill="#dc2626"/><text x="1216" y="214" font-size="11.5" fill="#7f1d1d">RDS via Terraform — never applied (Secrets Manager pwd)</text>
+  <text x="1200" y="234" font-size="11.5" fill="#64748b">K8s app currently targets in-cluster MySQL, not RDS (drift documented)</text>
+
+  <!-- gaps band -->
+  <rect x="230" y="262" width="910" height="52" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <text x="246" y="284" font-size="12" fill="#7f1d1d" font-weight="bold">Known gaps on this path (documented in docs/STATUS.md — not hidden):</text>
+  <text x="246" y="302" font-size="11.5" fill="#7f1d1d">no auth on POST/PUT/DELETE · order totals trusted from client · no DB transaction / stock decrement · no rate limiting · CORS * (dev)</text>
+
+  <!-- ================= LANE 2 : delivery ================= -->
+  <text x="40" y="352" font-size="15" font-weight="bold" fill="#0f172a">② Delivery pipeline (GitOps)</text>
+
+  <rect x="40" y="368" width="150" height="150" rx="10" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5"/>
+  <text x="115" y="394" font-size="13" font-weight="bold" fill="#0f172a" text-anchor="middle">Developer</text>
+  <text x="115" y="416" font-size="11.5" fill="#475569" text-anchor="middle">git push</text>
+  <text x="115" y="434" font-size="11.5" fill="#475569" text-anchor="middle">main = source</text>
+  <text x="115" y="452" font-size="11.5" fill="#475569" text-anchor="middle">of truth</text>
+  <line x1="190" y1="443" x2="248" y2="443" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+
+  <rect x="250" y="368" width="380" height="150" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+  <text x="270" y="394" font-size="13.5" font-weight="bold" fill="#0f172a">GitHub Actions — ci.yml (6 jobs)</text>
+  <text x="270" y="416" font-size="11.5" fill="#475569">backend: Pint + Larastan L7 + PHPUnit (15 tests)</text>
+  <text x="270" y="433" font-size="11.5" fill="#475569">docker build + smoke · kustomize build ×3 overlays</text>
+  <text x="270" y="450" font-size="11.5" fill="#475569">terraform fmt+validate ×4 · repo-audit report · dependabot</text>
+  <circle cx="274" cy="474" r="6" fill="#d97706"/><text x="286" y="478" font-size="11.5" fill="#713f12">file written; paste into .github/workflows (2-min, perm gap)</text>
+  <text x="270" y="498" font-size="11.5" fill="#64748b">history: nested backend/.github → 0 runs until root move</text>
+  <line x1="630" y1="443" x2="688" y2="443" stroke="#475569" stroke-width="1.6" stroke-dasharray="7 4" marker-end="url(#arr)"/>
+  <text x="659" y="433" font-size="10.5" fill="#64748b" text-anchor="middle">push</text>
+
+  <rect x="690" y="368" width="280" height="150" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+  <text x="710" y="394" font-size="13.5" font-weight="bold" fill="#0f172a">Docker Hub — hamzasarfraz862/*</text>
+  <circle cx="714" cy="418" r="6" fill="#d97706"/><text x="726" y="422" font-size="11.5" fill="#713f12">push = manual procedure (docs/docker.md)</text>
+  <circle cx="714" cy="442" r="6" fill="#dc2626"/><text x="726" y="446" font-size="11.5" fill="#7f1d1d">no publish workflow → tag drift 1.0.0 vs 1.0.2</text>
+  <text x="710" y="470" font-size="11.5" fill="#64748b">images consumed by Kind clusters only</text>
+
+  <rect x="1030" y="368" width="280" height="150" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="1050" y="394" font-size="13.5" font-weight="bold" fill="#0f172a">ArgoCD — App-of-Apps</text>
+  <text x="1050" y="416" font-size="11.5" fill="#475569">AppProject + roles · automated sync</text>
+  <text x="1050" y="433" font-size="11.5" fill="#475569">prune + selfHeal + retry · tracks main</text>
+  <circle cx="1054" cy="457" r="6" fill="#d97706"/><text x="1066" y="461" font-size="11.5" fill="#713f12">verified on Kind (Aug 2026) — none running now</text>
+  <text x="1050" y="485" font-size="11.5" fill="#64748b">bootstrap: bash gitops/bootstrap-argocd.sh</text>
+  <line x1="1310" y1="443" x2="1368" y2="443" stroke="#475569" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="1339" y="433" font-size="10.5" fill="#64748b" text-anchor="middle">applies</text>
+
+  <rect x="1370" y="368" width="250" height="150" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="1390" y="394" font-size="13.5" font-weight="bold" fill="#0f172a">Kustomize — gitops/</text>
+  <text x="1390" y="416" font-size="11.5" fill="#475569">base + overlays dev/staging/prod</text>
+  <text x="1390" y="433" font-size="11.5" fill="#475569">MySQL sts · nginx+FPM · probes</text>
+  <text x="1390" y="450" font-size="11.5" fill="#475569">ingress · netpol</text>
+  <circle cx="1394" cy="473" r="6" fill="#16a34a"/><text x="1406" y="477" font-size="11.5" fill="#14532d">every overlay render-checked in CI</text>
+  <circle cx="1394" cy="497" r="6" fill="#dc2626"/><text x="1406" y="501" font-size="11.5" fill="#7f1d1d">external-secrets not in build yet</text>
+
+  <!-- ================= LANE 3 : environments ================= -->
+  <text x="40" y="550" font-size="15" font-weight="bold" fill="#0f172a">③ Runtime targets — reality levels</text>
+
+  <rect x="40" y="566" width="480" height="150" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <text x="60" y="592" font-size="13.5" font-weight="bold" fill="#0f172a">Local — docker compose (root compose file)</text>
+  <text x="60" y="614" font-size="11.5" fill="#475569">mysql (healthcheck) ← backend-app php-fpm :9000</text>
+  <text x="60" y="631" font-size="11.5" fill="#475569">← backend-nginx :8000 · + front-end-app :3000 (pending)</text>
+  <circle cx="64" cy="655" r="6" fill="#16a34a"/><text x="76" y="659" font-size="11.5" fill="#14532d">API+DB side live-verified 2026-08-21 (logs: docs/docker-trouble.md)</text>
+  <text x="60" y="683" font-size="11.5" fill="#64748b">cp .env.example .env → docker compose up -d backend-nginx</text>
+
+  <rect x="560" y="566" width="500" height="150" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+  <text x="580" y="592" font-size="13.5" font-weight="bold" fill="#0f172a">Kind 3-node — dev machine (Aug 2026)</text>
+  <text x="580" y="614" font-size="11.5" fill="#475569">full-stack verified: ingress → frontend / nginx → FPM → MySQL sts</text>
+  <text x="580" y="631" font-size="11.5" fill="#475569">ArgoCD synced · NetworkPolicies applied · probes on /api/products</text>
+  <circle cx="584" cy="655" r="6" fill="#dc2626"/><text x="596" y="659" font-size="11.5" fill="#7f1d1d">no TLS · no HPA/metrics · no backup jobs · ephemeral (not running today)</text>
+  <text x="580" y="683" font-size="11.5" fill="#64748b">reproducible from docs/k8s-production-setup.md + docs/gitops-setup.md</text>
+
+  <rect x="1100" y="566" width="520" height="150" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>
+  <text x="1120" y="592" font-size="13.5" font-weight="bold" fill="#0f172a">AWS EKS — Terraform only, never applied</text>
+  <text x="1120" y="614" font-size="11.5" fill="#475569">module vpc / eks / rds · env dev · stag · prod · S3+KMS state + lock</text>
+  <text x="1120" y="631" font-size="11.5" fill="#475569">IMDSv2 · private subnets · encrypted RDS · OIDC · CloudWatch logs</text>
+  <circle cx="1124" cy="655" r="6" fill="#16a34a"/><text x="1136" y="659" font-size="11.5" fill="#14532d">terraform fmt + validate green in CI (audit bugs fixed 2026-09-01)</text>
+  <text x="1120" y="683" font-size="11.5" fill="#64748b">no plan/apply against a real account yet — EKS 1.28 pin is outdated</text>
+
+  <!-- arrows lane2 -> lane3 -->
+  <polyline points="830,518 830,540 700,540 700,564" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrR)"/>
+  <text x="866" y="544" font-size="10.5" fill="#64748b">image pulls</text>
+  <polyline points="1495,518 1495,540 1360,540 1360,564" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrR)"/>
+  <text x="1520" y="544" font-size="10.5" fill="#64748b">planned</text>
+  <polyline points="1170,518 1170,536 940,536 940,564" fill="none" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="6 4" marker-end="url(#arrR)"/>
+  <text x="1035" y="530" font-size="10.5" fill="#64748b">syncs (verified)</text>
+
+  <!-- ================= LANE 4 : cross-cutting ================= -->
+  <text x="40" y="758" font-size="15" font-weight="bold" fill="#0f172a">④ Cross-cutting services — status today</text>
+
+  <rect x="40" y="772" width="480" height="104" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="60" y="798" font-size="13.5" font-weight="bold" fill="#0f172a">Secrets</text>
+  <text x="60" y="820" font-size="11.5" fill="#475569">gitops/base/external-secrets manifests ready — NOT wired</text>
+  <text x="60" y="837" font-size="11.5" fill="#475569">K8s Secret with dev placeholders in base (overlays patch)</text>
+  <circle cx="64" cy="858" r="6" fill="#dc2626"/><text x="76" y="862" font-size="11.5" fill="#7f1d1d">ExternalSecret Operator + ClusterSecretStore not installed anywhere</text>
+
+  <rect x="560" y="772" width="500" height="104" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="580" y="798" font-size="13.5" font-weight="bold" fill="#0f172a">Observability</text>
+  <text x="580" y="820" font-size="11.5" fill="#475569">CloudWatch (TF config, unapplied) · Prometheus/Grafana (helm steps)</text>
+  <text x="580" y="837" font-size="11.5" fill="#475569">RDS error/slowquery log exports + retention in module/rds</text>
+  <circle cx="584" cy="858" r="6" fill="#dc2626"/><text x="596" y="862" font-size="11.5" fill="#7f1d1d">no live metrics/log stack anywhere — planned doc only</text>
+
+  <rect x="1100" y="772" width="520" height="104" rx="10" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="1120" y="798" font-size="13.5" font-weight="bold" fill="#0f172a">Backups / DR</text>
+  <text x="1120" y="820" font-size="11.5" fill="#475569">RDS: automated backups + PITR + deletion-protection flags in TF config</text>
+  <text x="1120" y="837" font-size="11.5" fill="#475569">Kind/MySQL sts: PVC only — no snapshot job, no Velero</text>
+  <circle cx="1124" cy="858" r="6" fill="#dc2626"/><text x="1136" y="862" font-size="11.5" fill="#7f1d1d">recovery never drilled (docs/disaster-recovery.md = plan, banner-marked)</text>
+
+  <!-- footer -->
+  <text x="40" y="906" font-size="11.5" fill="#64748b">Source of truth chain: code in repo ⇄ this diagram ⇄ README reality-check table ⇄ docs/STATUS.md audit ledger — if one says something the others don't, trust the file you can open.  ·  Mxmobilz, Muhammad Hamza, MIT, 2026-09-02.</text>
+</svg>

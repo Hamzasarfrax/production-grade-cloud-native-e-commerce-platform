@@ -53,24 +53,56 @@ re-verify it.
 
 ## 🏗️ Architecture
 
-```
-                        ┌────────────────────────────┐
-   Browser ───────────► │  Frontend (React+Vite)    │  ⚠️ local copy only, not committed
-                        │  nginx :3000 (or vite dev)│
-                        └────────────┬───────────────┘
-                                     │ /api (same-origin reverse proxy / Vite proxy)
-                        ┌────────────▼───────────────┐
-                        │  nginx :8000 ──► PHP-FPM   │  ✅ backend/ (Dockerfile, entrypoint)
-                        │  Laravel 13 JSON API       │
-                        └────────────┬───────────────┘
-                                     │ Eloquent / mysql:3306
-                        ┌────────────▼───────────────┐
-                        │  MySQL 8                   │  local: compose container · kind: StatefulSet · aws: RDS (Terraform, never applied)
-                        └────────────────────────────┘
+Rendered from the audited repo state (2026-09-02) — same facts as [docs/STATUS.md](docs/STATUS.md):
 
- Delivery: GitHub (source of truth) → CI (GitHub Actions) → [manual] docker push
-          → ArgoCD (App-of-Apps) → Kustomize overlays (dev/staging/prod) → Kind (local) / EKS (planned)
+![Mxmobilz cloud-native architecture and delivery pipeline](docs/architecture-diagram.png)
+
+*(SVG + PNG live at `docs/architecture-diagram.{svg,png}` — regenerate both when the architecture moves.)*
+
+```mermaid
+flowchart LR
+  classDef ok fill:#dcfce7,stroke:#16a34a,color:#14532d
+  classDef local fill:#fef9c3,stroke:#ca8a04,color:#713f12
+  classDef todo fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+  classDef plain fill:#ffffff,stroke:#94a3b8,color:#0f172a
+
+  subgraph RT ["1 · Request path"]
+    direction LR
+    user([Browser]):::plain
+    fe["Frontend React19+Vite<br/>nginx :3000 · /api proxy<br/>⚠️ NOT committed yet"]:::local
+    ng["nginx :8000<br/>backend-nginx"]:::ok
+    api["Laravel 13 JSON API<br/>17 endpoints · {ok,data}<br/>✅ tests + Larastan CI-gated"]:::ok
+    db[("MySQL 8<br/>✅ compose · ⚠️ Kind sts · ❌ RDS")]:::plain
+    gaps["❌ no auth · no DB transaction<br/>· client-trusted totals"]:::todo
+    user --> fe --> ng --> api --> db
+    api -.- gaps
+  end
+
+  subgraph CD ["2 · Delivery (GitOps)"]
+    direction LR
+    dev["git push → main"]:::plain
+    ci["GitHub Actions ci.yml<br/>pint · phpstan · phpunit<br/>docker build · kustomize · terraform"]:::local
+    hub[("Docker Hub<br/>⚠️ manual push · tag drift")]:::local
+    argo["ArgoCD App-of-Apps<br/>⚠️ Kind-verified · not running"]:::local
+    kus["Kustomize gitops/<br/>✅ overlays CI-render-checked"]:::ok
+    dev --> ci
+    ci -. manual push .-> hub
+    dev == polls main ==> argo
+    argo --> kus
+  end
+
+  subgraph TGT ["3 · Environments"]
+    direction TB
+    loc["✅ Local compose — live-verified"]:::ok
+    kindc["⚠️ Kind 3-node — full-stack verified,<br/>no TLS/HPA/metrics"]:::local
+    awsc["❌ EKS via Terraform — fmt+validate<br/>green · never plan/applied"]:::todo
+  end
+
+  kus --> loc & kindc & awsc
+  hub -. images .-> kindc
 ```
+
+Legend used everywhere: ✅ in repo & CI-gated/verified · ⚠️ real but local-only/partial · ❌ not implemented/never run.
 
 - Two deployable artifacts: **backend API image** and **frontend static image** (the latter
   pending the frontend commit). They are *separate deployables*, not a mesh of microservices —
@@ -338,6 +370,7 @@ Tracked honestly (full audit with evidence: [docs/STATUS.md](docs/STATUS.md)):
 |---|---|---|
 | [docs/STATUS.md](docs/STATUS.md) | ✅ audit record | Full claims-to-facts table, how to re-verify anything here |
 | [docs/architecture.md](docs/architecture.md) | ✅ code-accurate | Services, API contract, data flow |
+| [docs/architecture-diagram.png](docs/architecture-diagram.png) | ✅ rendered 2026-09-02 | Full architecture + delivery diagram (SVG source alongside) |
 | [docs/docker.md](docs/docker.md) | ✅ verified locally | Images, multi-stage build, registry push procedure (manual) |
 | [docs/docker-trouble.md](docs/docker-trouble.md) | ✅ verified | Real incidents + fixes (compose/nginx/volume/image size) |
 | [docs/k8s-production-setup.md](docs/k8s-production-setup.md) | ✅ verified on Kind | The actual local K8s build-out, WHAT/WHY/VERIFY per manifest |
