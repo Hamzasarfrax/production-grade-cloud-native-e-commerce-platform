@@ -23,7 +23,13 @@ patches:
     metadata:
       name: frontend
     spec:
-      replicas: 1
+      template:
+        spec:
+          containers:
+          - name: frontend
+            env:
+            - name: BACKEND_URL
+              value: "http://172.18.0.7:8000"
   target:
     kind: Deployment
     labelSelector: app=frontend

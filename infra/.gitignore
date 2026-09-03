@@ -1,0 +1,52 @@
+# Terraform files
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+tfplan
+.terraform.lock.hcl
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+crash.log
+crash.*.log
+
+# Local overrides
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Module cache
+.terraform.cache/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# AWS
+.aws/
+*.pem
+*.key
+
+# Build artifacts
+dist/
+build/
+
+# Environment files
+.env
+.env.local

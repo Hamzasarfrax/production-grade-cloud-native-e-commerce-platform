@@ -1,0 +1,154 @@
+name: Mxmobilz - Deploy
+
+on:
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
+
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  BACKEND_IMAGE: hamzasarfraz862/backend-app
+  FRONTEND_IMAGE: hamzasarfraz862/front-end-app
+  GITOPS_DIR: gitops/overlays/dev
+
+jobs:
+
+  check-ci:
+    name: Check CI Status
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: CI Successful
+        run: |
+          echo "CI/CD Pipeline completed successfully."
+          echo "Commit: ${{ github.event.workflow_run.head_sha }}"
+
+
+  update-gitops:
+    name: Update GitOps
+    needs: check-ci
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout CI Commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Fetch Git Tags
+        run: |
+          git fetch --tags --force
+
+      - name: Get Semantic Version
+        id: version
+        run: |
+          SHA="${{ github.event.workflow_run.head_sha }}"
+
+          VERSION=$(git tag --points-at "$SHA" \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | head -n 1)
+
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: No Semantic Version tag found for commit $SHA"
+            echo "Expected example: v1.0.1"
+            exit 1
+          fi
+
+          IMAGE_TAG="${VERSION#v}"
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+
+          echo "Release Version: $VERSION"
+          echo "Docker Image Tag: $IMAGE_TAG"
+
+      - name: Verify GitOps Files
+        run: |
+          test -f "$GITOPS_DIR/kustomization.yaml"
+
+          echo "GitOps directory:"
+          ls -la "$GITOPS_DIR"
+
+      - name: Install Kustomize
+        run: |
+          curl -sL \
+            https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh \
+            | bash
+
+          sudo mv kustomize /usr/local/bin/kustomize
+
+          kustomize version
+
+      - name: Update Backend Image
+        run: |
+          sed -i \
+            "s|image: ${BACKEND_IMAGE}:.*|image: ${BACKEND_IMAGE}:${IMAGE_TAG}|g" \
+            "$GITOPS_DIR/kustomization.yaml"
+
+      - name: Update Frontend Image
+        run: |
+          sed -i \
+            "s|image: ${FRONTEND_IMAGE}:.*|image: ${FRONTEND_IMAGE}:${IMAGE_TAG}|g" \
+            "$GITOPS_DIR/kustomization.yaml"
+
+      - name: Show GitOps Changes
+        run: |
+          echo "Updated GitOps configuration:"
+          git diff -- "$GITOPS_DIR/kustomization.yaml"
+
+      - name: Validate Kustomize
+        run: |
+          kustomize build "$GITOPS_DIR" > /tmp/rendered-manifest.yaml
+
+          echo "Kustomize build successful."
+
+      - name: Commit GitOps Changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "$GITOPS_DIR/kustomization.yaml"
+
+          if git diff --cached --quiet; then
+            echo "No GitOps changes detected."
+            exit 0
+          fi
+
+          git commit -m "chore(gitops): deploy ${IMAGE_TAG}"
+
+          git push
+
+
+  deployment-info:
+    name: Deployment Information
+    needs: update-gitops
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "======================================"
+          echo "       DEPLOYMENT INFORMATION"
+          echo "======================================"
+
+          echo "Version: ${{ env.IMAGE_TAG }}"
+
+          echo "Backend:"
+          echo "${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}"
+
+          echo "Frontend:"
+          echo "${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}"
+
+          echo ""
+          echo "GitOps repository updated."
+          echo "ArgoCD will detect the Git change."
+          echo "ArgoCD will sync Kubernetes."

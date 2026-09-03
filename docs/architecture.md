@@ -7,6 +7,7 @@
 | web     | frontend| React 19 + Vite + TS | 3000  | http://localhost:3000 |
 | api     | backend | Laravel 13 (PHP 8.3) | 8000  | http://localhost:8000 |
 | db      | —       | MySQL 8              | 3306  | internal (api) + host |
+|         |         | **Database name**: `mxmobilz_db` (matches `.env` and Terraform) |
 
 - Each service is buildable/runable independently (own Dockerfile, own port, owns its data).
 - `docker-compose.yml` orchestrates all three locally and is the reference for the real
