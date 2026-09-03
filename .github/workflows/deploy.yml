@@ -1,278 +1,154 @@
-name: CI/CD Pipeline
+name: Mxmobilz - Deploy
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_run:
+    workflows: ["CI/CD Pipeline"]
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
-  contents: read
-  id-token: write  # OIDC for AWS auth (no static credentials)
+  contents: write
+  id-token: write
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: mxmobilz/backend
   BACKEND_IMAGE: hamzasarfraz862/backend-app
   FRONTEND_IMAGE: hamzasarfraz862/front-end-app
-  AWS_REGION: us-east-1
-  TF_WORKING_DIR: ./infra
+  GITOPS_DIR: gitops/overlays/dev
 
 jobs:
-  # ---------------------------------------------------
-  # 1. Lint & Type Check
-  # ---------------------------------------------------
-  lint:
+
+  check-ci:
+    name: Check CI Status
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
-    outputs:
-      lint_result: ${{ steps.lint-check.outcome }}
 
     steps:
-      - name: Checkout code
+      - name: CI Successful
+        run: |
+          echo "CI/CD Pipeline completed successfully."
+          echo "Commit: ${{ github.event.workflow_run.head_sha }}"
+
+
+  update-gitops:
+    name: Update GitOps
+    needs: check-ci
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Checkout CI Commit
         uses: actions/checkout@v4
-
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
-          tools: composer:v2
-          coverage: none
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
 
-      - name: Install Dependencies
-        run: composer install --no-interaction --no-dev --optimize-autoloader
-
-      - name: Run PHP Lint
-        run: php -l laravel/bootstrap/app.php || true
-
-      - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --no-progress 2>/dev/null || echo "PHPStan skipped or not configured"
-
-      - name: Run Pest/phpunit
-        run: vendor/bin/pest --no-announce --no-interactive 2>/dev/null || vendor/bin/phpunit --no-announce --no-interactive 2>/dev/null || echo "No tests configured"
-
-      - name: Lint Check
-        id: lint-check
-        run: echo "lint_result=success" >> $GITHUB_OUTPUT
-
-  # ---------------------------------------------------
-  # 2. Validate Terraform
-  # ---------------------------------------------------
-  terraform-validate:
-    runs-on: ubuntu-latest
-    needs: lint
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.0
-
-      - name: Terraform Init (no state remote)
+      - name: Fetch Git Tags
         run: |
-          cd ${{ env.TF_WORKING_DIR }}/env/dev
-          terraform init -backend=false
-          terraform validate
+          git fetch --tags --force
 
-      - name: Terraform Format Check
+      - name: Get Semantic Version
+        id: version
         run: |
-          cd ${{ env.TF_WORKING_DIR }}
-          terraform fmt -check -recursive
+          SHA="${{ github.event.workflow_run.head_sha }}"
 
-  # ---------------------------------------------------
-  # 3. Build & Scan Docker Image (Backend)
-  # ---------------------------------------------------
-  build-backend:
-    needs: terraform-validate
+          VERSION=$(git tag --points-at "$SHA" \
+            | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+            | head -n 1)
+
+          if [ -z "$VERSION" ]; then
+            echo "ERROR: No Semantic Version tag found for commit $SHA"
+            echo "Expected example: v1.0.1"
+            exit 1
+          fi
+
+          IMAGE_TAG="${VERSION#v}"
+
+          echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+
+          echo "Release Version: $VERSION"
+          echo "Docker Image Tag: $IMAGE_TAG"
+
+      - name: Verify GitOps Files
+        run: |
+          test -f "$GITOPS_DIR/kustomization.yaml"
+
+          echo "GitOps directory:"
+          ls -la "$GITOPS_DIR"
+
+      - name: Install Kustomize
+        run: |
+          curl -sL \
+            https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh \
+            | bash
+
+          sudo mv kustomize /usr/local/bin/kustomize
+
+          kustomize version
+
+      - name: Update Backend Image
+        run: |
+          sed -i \
+            "s|image: ${BACKEND_IMAGE}:.*|image: ${BACKEND_IMAGE}:${IMAGE_TAG}|g" \
+            "$GITOPS_DIR/kustomization.yaml"
+
+      - name: Update Frontend Image
+        run: |
+          sed -i \
+            "s|image: ${FRONTEND_IMAGE}:.*|image: ${FRONTEND_IMAGE}:${IMAGE_TAG}|g" \
+            "$GITOPS_DIR/kustomization.yaml"
+
+      - name: Show GitOps Changes
+        run: |
+          echo "Updated GitOps configuration:"
+          git diff -- "$GITOPS_DIR/kustomization.yaml"
+
+      - name: Validate Kustomize
+        run: |
+          kustomize build "$GITOPS_DIR" > /tmp/rendered-manifest.yaml
+
+          echo "Kustomize build successful."
+
+      - name: Commit GitOps Changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "$GITOPS_DIR/kustomization.yaml"
+
+          if git diff --cached --quiet; then
+            echo "No GitOps changes detected."
+            exit 0
+          fi
+
+          git commit -m "chore(gitops): deploy ${IMAGE_TAG}"
+
+          git push
+
+
+  deployment-info:
+    name: Deployment Information
+    needs: update-gitops
     runs-on: ubuntu-latest
-    outputs:
-      image_digest: ${{ steps.meta.out.outputs.digest }}
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Login to GitHub Container Registry
-        uses: aws-actions/amazon-ecr-login@v2
-        with:
-          mask-password: false
-          registry-type: public
-
-      - name: Cache Docker layers
-        uses: actions/cache@v4
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx-${{ hashFiles('backend/Dockerfile') }}
-          restore-keys: |
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and Push Backend Image
-        id: build-backend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./backend
-          push: true
-          tags: ${{ env.BACKEND_IMAGE }}:latest
-          cache-from: type=registry,ref=ghcr.io/hamzasarfraz862/backend-app:buildcache
-          cache-to: type=registry,ref=ghcr.io/hamzasarfraz862/backend-app:buildcache,mode=max
-          load: false
-
-      - name: Trivy Vulnerability Scan
-        id: trivy
-        uses: aquasecurity/trivy-action@0.13.0
-        with:
-          image-ref: ${{ env.BACKEND_IMAGE }}:latest
-          format: sarif
-          output: trivy-scan.sarif
-          ignore-unfixed: false
-          severity: 'CRITICAL,HIGH'
-
-      - name: Upload Trivy Scan Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: trivy-scan
-          path: trivy-scan.sarif
-
-      - name: Set output digest
-        id: meta
-        run: echo "image_digest=${{ steps.build-backend.outputs.digest }}" >> $GITHUB_OUTPUT
-
-  # ---------------------------------------------------
-  # 4. Build Docker Image (Frontend)
-  # ---------------------------------------------------
-  build-frontend:
-    needs: terraform-validate
-    runs-on: ubuntu-latest
-    outputs:
-      image_digest: ${{ steps.meta.out.outputs.digest }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: /tmp/node-modules
-          key: frontend-node-${{ hashFiles('frontend/package-lock.json') }}
-          restore-keys: |
-
-      - name: Install Dependencies
-        working-dir: frontend
-        run: npm ci
-
-      - name: Build Frontend
-        working-dir: frontend
-        run: npm run build
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - name: Build and Push Frontend Image
-        id: build-frontend
-        uses: docker/build-push-action@v6
-        with:
-          context: ./frontend
-          push: true
-          tags: ${{ env.FRONTEND_IMAGE }}:latest
-          cache-from: type=registry,ref=ghcr.io/hamzasarfraz862/front-end-app:buildcache
-          cache-to: type=registry,ref=ghcr.io/hamzasarfraz862/front-end-app:buildcache,mode=max
-
-      - name: Set output digest
-        id: meta
-        run: echo "image_digest=${{ steps.build-frontend.outputs.digest }}" >> $GITHUB_OUTPUT
-
-  # ---------------------------------------------------
-  # 5. Deploy to Staging (Terraform + Kubernetes)
-  # ---------------------------------------------------
-  deploy-staging:
-    needs: [build-backend, build-frontend]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment: staging
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Configure AWS Credentials (OIDC)
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::123456789012:role/github-oidc-deploy
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Terraform Apply (staging)
-        env:
-          TF_VAR_environment: staging
+      - name: Deployment Summary
         run: |
-          cd infra/env/stag
-          terraform init -backend=false
-          terraform apply -auto-approve
+          echo "======================================"
+          echo "       DEPLOYMENT INFORMATION"
+          echo "======================================"
 
-      - name: Update Kustomize overlays
-        run: |
-          cd gitops/overlays/staging
-          # Update image tags in kustomization
-          sed -i "s|hamzasarfraz862/backend-app:.*|hamzasarfraz862/backend-app:${{ steps.trivy.out.outputs.digest }}|g" kustomization.yaml
-          sed -i "s|hamzasarfraz862/front-end-app:.*|hamzasarfraz862/front-end-app:${{ steps.meta.out.outputs.digest }}|g" kustomization.yaml
+          echo "Version: ${{ env.IMAGE_TAG }}"
 
-      - name: Apply GitOps manifests
-        run: |
-          kubectl apply -k gitops/overlays/staging
+          echo "Backend:"
+          echo "${{ env.BACKEND_IMAGE }}:${{ env.IMAGE_TAG }}"
 
-  # ---------------------------------------------------
-  # 6. Security Scanning
-  # ---------------------------------------------------
-  security-scan:
-    needs: [build-backend, build-frontend]
-    runs-on: ubuntu-latest
-    if: always()
+          echo "Frontend:"
+          echo "${{ env.FRONTEND_IMAGE }}:${{ env.IMAGE_TAG }}"
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Trivy Container Scan (Backend)
-        run: |
-          trivy image --exit-code 1 --severity CRITICAL,HIGH hamzasarfraz862/backend-app:latest || true
-
-      - name: Trivy Container Scan (Frontend)
-        run: |
-          trivy image --exit-code 1 --severity CRITICAL,HIGH hamzasarfraz862/front-end-app:latest || true
-
-      - name: Check for secrets in code
-        run: |
-          detect-secrets scan --no-verify 2>/dev/null || echo "No secret scanning configured"
-
-  # ---------------------------------------------------
-  # 7. Deploy to Production (Manual)
-  # ---------------------------------------------------
-  deploy-production:
-    needs: [deploy-staging]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    environment:
-      name: production
-      url: https://mxmobilz.local
-    handoffs: [manual-approval]
-
-    steps:
-      - name: Manual Approval Required
-        run: |
-          echo "🛑 Production deployment requires manual approval"
-          echo "Run: terraform -e prod apply and kubectl apply -k gitops/overlays/prod"
-          exit 0
-
-      - name: Approve and Deploy Production
-        if: false
-        run: |
-          cd infra/env/prod
-          terraform apply -auto-approve
-          kubectl apply -k gitops/overlays/prod
+          echo ""
+          echo "GitOps repository updated."
+          echo "ArgoCD will detect the Git change."
+          echo "ArgoCD will sync Kubernetes."
