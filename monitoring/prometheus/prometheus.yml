@@ -1,0 +1,120 @@
+# ==============================================================================
+# Prometheus Configuration — Mxmobilz E-commerce Monitoring
+# ==============================================================================
+
+global:
+  scrape_interval: 15s       # Har 15 sec metrics collect
+  evaluation_interval: 15s   # Har 15 sec alert rules evaluate
+  scrape_timeout: 10s
+
+# Alert rules load karo
+rule_files:
+  - "alert-rules.yml"
+
+# Alertmanager destination
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+# ==============================================================================
+# Scrape Targets — Sab exporters yahan define
+# ==============================================================================
+scrape_configs:
+
+  # --- Prometheus khud (self-monitoring) ---
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels:
+          service: "prometheus"
+
+  # --- Node Exporter — Host OS metrics ---
+  - job_name: "node-exporter"
+    static_configs:
+      - targets: ["node-exporter:9100"]
+        labels:
+          service: "node-exporter"
+
+  # --- cAdvisor — Container metrics (Docker) ---
+  - job_name: "cadvisor"
+    static_configs:
+      - targets: ["cadvisor:8080"]
+        labels:
+          service: "cadvisor"
+    metric_relabel_configs:
+      # Sirf container-level metrics rakho, drop noisy ones
+      - source_labels: [__name__]
+        regex: "container_(cpu|memory|network|fs|tasks)_.*"
+        action: keep
+
+  # --- MySQL Exporter ---
+  - job_name: "mysqld-exporter"
+    static_configs:
+      - targets: ["mysqld-exporter:9104"]
+        labels:
+          service: "mysql"
+          component: "database"
+
+  # --- PHP-FPM Exporter ---
+  - job_name: "phpfpm-exporter"
+    static_configs:
+      - targets: ["phpfpm-exporter:9253"]
+        labels:
+          service: "backend"
+          component: "php-fpm"
+
+  # --- Nginx Exporter ---
+  - job_name: "nginx-exporter"
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+        labels:
+          service: "backend"
+          component: "nginx"
+
+  # --- Blackbox Exporter — HTTP probes (health checks) ---
+  - job_name: "blackbox-http"
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://backend-nginx:80/api/products    # Backend API health
+          - http://backend-nginx:80/api/stats        # Admin stats
+          - http://backend-nginx:80/api/inquiries    # Inquiries endpoint
+        labels:
+          service: "backend"
+          probe_type: "http"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # --- Blackbox — Frontend probe ---
+  - job_name: "blackbox-http-frontend"
+    metrics_path: /probe
+    params:
+      module: [http_2xx]
+    static_configs:
+      - targets:
+          - http://front-end-app:80/    # Frontend health
+        labels:
+          service: "frontend"
+          probe_type: "http"
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: __param_target
+      - source_labels: [__param_target]
+        target_label: instance
+      - target_label: __address__
+        replacement: blackbox-exporter:9115
+
+  # --- MySQL — Direct metrics (via mysqld_exporter /metrics endpoint) ---
+  # Alternative: if mysqld_exporter doesn't work, use this:
+  # - job_name: "mysql-direct"
+  #   static_configs:
+  #     - targets: ["mysql:3306"]

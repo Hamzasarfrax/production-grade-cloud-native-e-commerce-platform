@@ -69,6 +69,29 @@
 - [x] docs/gitops-setup.md (2026-08-31): complete GitOps/ArgoCD documentation with repo
       structure, App of Apps pattern, Kustomize overlays, RBAC, bootstrap, verify, operations,
       secrets management, hardening checklist, troubleshooting.
+- [x] docs/monitoring.md (2026-09-04): complete Prometheus + Grafana monitoring
+      documentation with WHAT/WHY/VERIFY/ALTERNATIVE pattern. Covers Docker Compose
+      local setup (9 services: Prometheus, Grafana, Alertmanager, 6 exporters) + K8s
+      kube-prometheus-stack. 20+ alert rules (infrastructure, application, PHP-FPM,
+      MySQL, nginx, synthetic monitoring). Auto-provisioned Grafana dashboards (2 JSON
+      dashboards: Application Overview + Kubernetes Cluster). Team-based alert routing.
+      PromQL cheat sheet. Level assessment. Files: `monitoring/` directory.
+- [x] MONITORING K8s CRDs (2026-09-07): `monitoring/k8s/` — ServiceMonitors (backend,
+      mysql), PrometheusRules (app/infra/mysql alerts), Grafana dashboard ConfigMap
+      (auto-load via sidecar), install.sh one-command setup. Production-style YAML
+      (CRD-based, not click-click). Deployment steps in docs/monitoring.md §7.
+- [x] `.github/workflows/ci.yml` (2026-09-07): complete CI/CD — backend
+      (php lint/phpstan/phpunit), frontend (lint/typecheck/build), terraform validate,
+      build & push GHCR images with Trivy scan, GitOps auto-update (kustomize image
+      tag bump + commit).
+- [x] `.github/workflows/deploy-prod.yml` (2026-09-07): manual-approval gated prod
+      deployment to AWS EKS via OIDC — kustomize build overlays/prod → kubectl apply →
+      rollout wait → smoke tests. Existing `.github/workflows/deploy.yml` kept
+      (versioned GitOps updater triggered after CI success).
+- [x] PROJECT_GUIDE.md REWRITE (2026-09-07): complete hands-on runbook — every command
+      + expected output. 9 phases: env setup → docker run → test everything → monitoring
+      → k6 load test → GitHub Actions → Kind K8s → AWS EKS+RDS → production verification.
+      Includes troubleshooting for common errors. Real-world, exact-step-by-step.
 - [ ] README/docs — deployment.md, runbook.md, security.md, disaster-recovery.md,
       troubleshooting.md abhi bhi pending.
 - [ ] Auth (Laravel Sanctum) for protected admin + `/api` — pending.
@@ -128,8 +151,11 @@ Response shape: `{ "ok": true, "data": ... }`.
 1. Auth — Laravel Sanctum (login/register) for protected admin + `/api` routes.
 2. K8s core setup DONE (kind multi-node, MySQL StatefulSet, backend Helm+sidecar,
    frontend, ingress). ArgoCD GitOps pipeline COMPLETE (App-of-Apps, Kustomize overlays,
-   RBAC). Baki: production hardening (TLS/cert-manager, HPA enable, Prometheus/
-   metrics-server, runAsNonRoot, backup job/Velero, image signing).
+   RBAC). Monitoring stack DONE (Prometheus + Grafana + 6 exporters + 20+ alerts + 2
+   dashboards). CI/CD DONE (ci.yml full pipeline + deploy-prod.yml manual gate). AWS
+   deploy NEXT: OIDC role setup, terraform apply, EKS connect. Baki: production
+   hardening (TLS/cert-manager, HPA enable, runAsNonRoot, backup job/Velero, image
+   signing, Loki/logs, Jaeger/traces).
 3. Docs: deployment.md, runbook.md, security.md, disaster-recovery.md, troubleshooting.md.
 4. Admin: product edit UI + promos management tab (API methods already exist in `src/api.ts`).
 

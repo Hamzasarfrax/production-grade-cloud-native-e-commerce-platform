@@ -1,0 +1,261 @@
+# ==============================================================================
+# Prometheus Alert Rules — Mxmobilz E-commerce
+# ==============================================================================
+# Ye rules Prometheus har 15 sec evaluate karta hai.
+# Jab condition true hoti hai → Alertmanager ko alert bhejta hai.
+# ==============================================================================
+
+groups:
+
+  # ===========================================================================
+  # INFRASTRUCTURE ALERTS — Host & Containers
+  # ===========================================================================
+  - name: infrastructure
+    rules:
+
+      # --- Host CPU > 80% for 5 min ---
+      - alert: HighCpuUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High CPU usage on {{ $labels.instance }}"
+          description: "CPU usage is {{ printf \"%.1f\" $value }}% (threshold: 80%)"
+          runbook_url: "https://github.com/your-org/runbook#high-cpu"
+
+      # --- Host Memory > 85% for 5 min ---
+      - alert: HighMemoryUsage
+        expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "High memory usage on {{ $labels.instance }}"
+          description: "Memory usage is {{ printf \"%.1f\" $value }}% (threshold: 85%)"
+
+      # --- Host Disk > 85% ---
+      - alert: DiskSpaceLow
+        expr: (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 > 85
+        for: 5m
+        labels:
+          severity: critical
+          team: infrastructure
+        annotations:
+          summary: "Disk space low on {{ $labels.instance }}"
+          description: "Disk usage is {{ printf \"%.1f\" $value }}% (threshold: 85%)"
+
+      # --- Container restarted > 3 times in 15 min ---
+      - alert: ContainerRestarting
+        expr: increase(container_restart_count[15m]) > 3
+        for: 0m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Container {{ $labels.name }} restarted {{ $value }} times"
+          description: "Container in pod {{ $labels.pod }} has restarted {{ $value }} times in 15 minutes"
+
+  # ===========================================================================
+  # APPLICATION ALERTS — Backend API
+  # ===========================================================================
+  - name: application
+    rules:
+
+      # --- Backend API down (blackbox probe fail) ---
+      - alert: BackendApiDown
+        expr: probe_success{job="blackbox-http"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Backend API is DOWN"
+          description: "HTTP probe to {{ $labels.instance }} failed for more than 1 minute"
+
+      # --- High API error rate (5xx responses) ---
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) * 100 > 5
+        for: 3m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "High 5xx error rate: {{ printf \"%.1f\" $value }}%"
+          description: "More than 5% of requests are returning 5xx errors"
+
+      # --- High API latency (p95 > 2 seconds) ---
+      - alert: HighApiLatency
+        expr: histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le)) > 2
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "High API latency (p95: {{ printf \"%.2f\" $value }}s)"
+          description: "95th percentile response time exceeds 2 seconds"
+
+      # --- Frontend down (blackbox probe fail) ---
+      - alert: FrontendDown
+        expr: probe_success{job="blackbox-http-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: frontend
+        annotations:
+          summary: "Frontend is DOWN"
+          description: "HTTP probe to {{ $labels.instance }} failed"
+
+  # ===========================================================================
+  # PHP-FPM ALERTS — Application Runtime
+  # ===========================================================================
+  - name: php-fpm
+    rules:
+
+      # --- PHP-FPM all workers busy ---
+      - alert: PhpFpmWorkersExhausted
+        expr: |
+          php_fpm_active_processes / php_fpm_total_processes > 0.9
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "PHP-FPM workers {{ printf \"%.0f\" $value }}% utilized"
+          description: "PHP-FPM process pool is nearly exhausted. Consider increasing pm.max_children."
+
+      # --- PHP-FPM pool down ---
+      - alert: PhpFpmDown
+        expr: php_fpm_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "PHP-FPM pool is DOWN"
+          description: "PHP-FPM exporter cannot reach the PHP-FPM status page"
+
+      # --- High PHP-FPM request duration ---
+      - alert: PhpFpmSlowRequests
+        expr: rate(php_fpm_request_duration_seconds_sum[5m]) / rate(php_fpm_request_duration_seconds_count[5m]) > 1
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "PHP-FPM average request time: {{ printf \"%.2f\" $value }}s"
+          description: "Average PHP request processing time exceeds 1 second"
+
+  # ===========================================================================
+  # MYSQL ALERTS — Database
+  # ===========================================================================
+  - name: mysql
+    rules:
+
+      # --- MySQL down ---
+      - alert: MysqlDown
+        expr: mysql_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: database
+        annotations:
+          summary: "MySQL is DOWN"
+          description: "MySQL exporter cannot connect to the database"
+
+      # --- MySQL too many connections (> 80% of max) ---
+      - alert: MysqlHighConnections
+        expr: |
+          mysql_global_status_threads_connected / mysql_global_variables_max_connections * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "MySQL connections at {{ printf \"%.0f\" $value }}%"
+          description: "Connection pool is nearly exhausted. Max connections may need increasing."
+
+      # --- MySQL slow queries spike ---
+      - alert: MysqlSlowQueries
+        expr: rate(mysql_global_status_slow_queries[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "MySQL slow queries detected"
+          description: "{{ printf \"%.2f\" $value }} slow queries per second"
+
+      # --- MySQL replication lag (if replication enabled) ---
+      - alert: MysqlReplicationLag
+        expr: mysql_slave_status_seconds_behind_master > 30
+        for: 5m
+        labels:
+          severity: warning
+          team: database
+        annotations:
+          summary: "MySQL replication lag: {{ $value }}s"
+          description: "Slave is {{ $value }} seconds behind master"
+
+  # ===========================================================================
+  # NGINX ALERTS — Web Server
+  # ===========================================================================
+  - name: nginx
+    rules:
+
+      # --- Nginx high connection rate ---
+      - alert: NginxHighConnections
+        expr: nginx_connections_active > 100
+        for: 5m
+        labels:
+          severity: warning
+          team: infrastructure
+        annotations:
+          summary: "Nginx active connections: {{ $value }}"
+          description: "Nginx has more than 100 active connections"
+
+      # --- Nginx 5xx error spike ---
+      - alert: NginxHigh5xxRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) > 5
+        for: 3m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Nginx 5xx rate: {{ printf \"%.1f\" $value }}/s"
+          description: "Nginx is serving more than 5 five-hundred errors per second"
+
+  # ===========================================================================
+  # SYNTHETIC MONITORING — User Experience
+  # ===========================================================================
+  - name: synthetic
+    rules:
+
+      # --- Checkout flow unreachable ---
+      - alert: CheckoutEndpointDown
+        expr: probe_success{instance=~".*api/products.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          team: backend
+        annotations:
+          summary: "Checkout API endpoint unreachable"
+          description: "Users cannot reach the products API — checkout flow may be broken"
+
+      # --- High response time for critical endpoints ---
+      - alert: CriticalEndpointSlow
+        expr: probe_duration_seconds{job="blackbox-http"} > 5
+        for: 3m
+        labels:
+          severity: warning
+          team: backend
+        annotations:
+          summary: "Critical endpoint slow: {{ printf \"%.2f\" $value }}s"
+          description: "HTTP probe to {{ $labels.instance }} is taking more than 5 seconds"

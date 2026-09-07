@@ -1,0 +1,85 @@
+# ==============================================================================
+# PrometheusRule — Infrastructure Alerts (Host + Containers)
+# ==============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mxmobilz-infra-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring
+    app: mxmobilz
+    tier: infrastructure
+spec:
+  groups:
+    - name: mxmobilz.infrastructure
+      rules:
+        # CPU > 80% for 5 min
+        - alert: HighCpuUsage
+          expr: |
+            100 - (
+              avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100
+            ) > 80
+          for: 5m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "High CPU on {{ $labels.instance }}"
+            description: "CPU {{ printf \"%.1f\" $value }}% (threshold: 80%)"
+
+        # Memory > 85%
+        - alert: HighMemoryUsage
+          expr: |
+            (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 > 85
+          for: 5m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "High memory on {{ $labels.instance }}"
+            description: "Memory {{ printf \"%.1f\" $value }}% (threshold: 85%)"
+
+        # Disk > 85%
+        - alert: DiskSpaceLow
+          expr: |
+            (1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 > 85
+          for: 5m
+          labels:
+            severity: critical
+            team: infrastructure
+          annotations:
+            summary: "Disk space LOW on {{ $labels.instance }}"
+            description: "Disk {{ printf \"%.1f\" $value }}% used (threshold: 85%)"
+
+        # Container restart > 3 times in 15 min
+        - alert: ContainerRestarting
+          expr: increase(container_restart_count[15m]) > 3
+          for: 0m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "Container {{ $labels.name }} restarted {{ $value }} times"
+
+        # Pod CrashLoopBackOff
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[15m]) * 60 * 5 > 0
+          for: 5m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "Pod {{ $labels.pod }} is crash looping"
+
+        # Pod not ready
+        - alert: PodNotReady
+          expr: |
+            kube_pod_status_ready{namespace=~"cloud-native-ecomerce-.*"} == 0
+          for: 5m
+          labels:
+            severity: warning
+            team: infrastructure
+          annotations:
+            summary: "Pod {{ $labels.pod }} not ready for 5 minutes"

@@ -1,0 +1,61 @@
+# ==============================================================================
+# ServiceMonitor — Backend (Nginx + PHP-FPM)
+# ==============================================================================
+# Prometheus Operator ye YAML dekh kar auto-discover karta hai:
+# - Kahan se metrics chahiye (namespace + labels se pod/service dhundta hai)
+# - Kitni baar scrape karna hai (interval)
+# - Kaunsa endpoint hit karna hai (path)
+#
+# Kaise kaam karta hai:
+#   1. Helm chart ne Prometheus install kiya (with Operator)
+#   2. Operator watches karta hai ServiceMonitor CRDs
+#   3. Jab ye apply hota hai → Operator Prometheus config update karta hai
+#   4. Prometheus next scrape cycle pe backend se metrics lata hai
+#
+# Verify:
+#   kubectl get servicemonitor -n monitoring
+#   kubectl describe servicemonitor mxmobilz-backend -n monitoring
+#
+# Prometheus targets page pe dekho:
+#   kubectl port-forward -n monitoring svc/monitoring-kube-prom-prometheus 9090:9090
+#   http://localhost:9090 → Status → Targets → "mxmobilz-backend" should be UP
+# ==============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mxmobilz-backend
+  namespace: monitoring
+  labels:
+    release: monitoring    # Helm chart ke saath match karna zaroori
+    app: mxmobilz
+    tier: backend
+spec:
+  # Backend pods kis namespace me hain
+  namespaceSelector:
+    matchNames:
+      - cloud-native-ecomerce-app
+      - default              # Docker Compose mode ke liye
+
+  # Kaunse service pe apply karna hai (label selector)
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: backend
+
+  # Kya kya scrape karna hai
+  endpoints:
+    # Nginx stub_status — connection/request metrics
+    - port: nginx           # Service me port name
+      path: /stub_status
+      interval: 15s
+      scrapeTimeout: 10s
+      labels:
+        scrape_target: nginx
+
+    # PHP-FPM status — process pool metrics
+    - port: nginx           # Nginx ke through jata hai
+      path: /fpm-status
+      interval: 15s
+      scrapeTimeout: 10s
+      labels:
+        scrape_target: php-fpm

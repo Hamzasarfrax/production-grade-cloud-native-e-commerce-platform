@@ -1,0 +1,33 @@
+# ==============================================================================
+# ServiceMonitor — MySQL
+# ==============================================================================
+# MySQL exporter se metrics collect karta hai
+#
+# Verify:
+#   kubectl get servicemonitor -n monitoring
+#   curl http://localhost:9090/api/v1/targets | grep mysql
+# ==============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: mxmobilz-mysql
+  namespace: monitoring
+  labels:
+    release: monitoring
+    app: mxmobilz
+    tier: database
+spec:
+  namespaceSelector:
+    matchNames:
+      - cloud-native-ecomerce-app
+      - default
+
+  selector:
+    matchLabels:
+      app: mysqld-exporter
+
+  endpoints:
+    - port: exporter
+      interval: 15s
+      scrapeTimeout: 10s
