@@ -1,0 +1,110 @@
+name: Docker Build, Scan & Push
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - staging
+
+env:
+  BACKEND_IMAGE: hamzasarfrax862/backend-app
+  FRONTEND_IMAGE: hamzasarfrax862/front-end-app
+
+jobs:
+  docker:
+    name: Build, Scan & Push Images
+    runs-on: ubuntu-latest
+
+    steps:
+      # -----------------------------
+      # Checkout
+      # -----------------------------
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # -----------------------------
+      # Docker Buildx
+      # -----------------------------
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # -----------------------------
+      # Build Backend
+      # -----------------------------
+      - name: Build Backend Image
+        run: |
+          docker build \
+            -t $BACKEND_IMAGE:${{ github.sha }} \
+            ./backend
+
+      # -----------------------------
+      # Build Frontend
+      # -----------------------------
+      - name: Build Frontend Image
+        run: |
+          docker build \
+            -t $FRONTEND_IMAGE:${{ github.sha }} \
+            ./frontend
+
+      # -----------------------------
+      # Trivy Backend Scan
+      # -----------------------------
+      - name: Scan Backend Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      # -----------------------------
+      # Trivy Frontend Scan
+      # -----------------------------
+      - name: Scan Frontend Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      # -----------------------------
+      # Docker Hub Login
+      # -----------------------------
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      # -----------------------------
+      # Push Backend
+      # -----------------------------
+      - name: Push Backend Image
+        run: |
+          docker push $BACKEND_IMAGE:${{ github.sha }}
+
+      # -----------------------------
+      # Push Frontend
+      # -----------------------------
+      - name: Push Frontend Image
+        run: |
+          docker push $FRONTEND_IMAGE:${{ github.sha }}
+
+      # -----------------------------
+      # Also push latest
+      # -----------------------------
+      - name: Tag Images as Latest
+        run: |
+          docker tag $BACKEND_IMAGE:${{ github.sha }} $BACKEND_IMAGE:latest
+          docker tag $FRONTEND_IMAGE:${{ github.sha }} $FRONTEND_IMAGE:latest
+
+      - name: Push Latest Tags
+        run: |
+          docker push $BACKEND_IMAGE:latest
+          docker push $FRONTEND_IMAGE:latest
