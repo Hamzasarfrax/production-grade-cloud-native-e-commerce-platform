@@ -31,6 +31,9 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 echo ""
 
 # 3. Apply GitOps manifests
+echo "Applying Ingress-Nginx..."
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+
 echo "Applying ArgoCD Project..."
 kubectl apply -f gitops/argocd/projects/mxmobilz-project.yaml
 
@@ -41,7 +44,7 @@ echo ""
 echo "=== Done! ==="
 echo ""
 echo "Next steps:"
-echo "1. Access ArgoCD UI: kubectl port-forward -n argocd svc/argocd-server 8080:443"
+echo "1. Access ArgoCD UI: kubectl port-forward -n argocd svc/argocd-server 8080:443 &"
 echo "2. Open https://localhost:8080 (user: admin, password above)"
 echo "3. Click each app (mxmobilz-dev, mxmobilz-staging, mxmobilz-prod) and press SYNC"
 echo "4. Verify: kubectl get pods -n cloud-native-ecomerce-dev/staging/prod"

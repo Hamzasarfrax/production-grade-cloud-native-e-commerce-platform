@@ -8,6 +8,14 @@
 </head>
 <body>
 
-
+<style>
+    h1 {
+        text-align: center;
+        margin-top: 20%;
+    }
+</style>
+<div class="container">
+    <h1>Welcome to Ecomerce Backend</h1>
+</div>
 </body>
 </html>
