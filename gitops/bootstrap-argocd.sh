@@ -18,6 +18,7 @@ if ! kubectl get namespace argocd &> /dev/null; then
     echo "Installing ArgoCD..."
     kubectl create namespace argocd
     kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
     echo "Waiting for ArgoCD..."
     kubectl wait --for=condition=Ready pods --all -n argocd --timeout=300s
 else
@@ -33,6 +34,12 @@ echo ""
 # 3. Apply GitOps manifests
 echo "Applying Ingress-Nginx..."
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+# for local kind
+which kubectl
+sudo setcap 'cap_net_bind_service=+ep' $(which kubectl)
+getcap $(which kubectl)
+# port forword 
+sudo kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 80:80 &
 
 echo "Applying ArgoCD Project..."
 kubectl apply -f gitops/argocd/projects/mxmobilz-project.yaml
