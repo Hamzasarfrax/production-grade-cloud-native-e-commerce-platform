@@ -1,0 +1,148 @@
+# ==============================================================================
+# PrometheusRule — Application Alerts (Backend + Frontend)
+# ==============================================================================
+# Ye alerts Prometheus Operator ke through Prometheus me load hote hain
+#
+# Alert flow:
+#   1. Condition true hoti hai (e.g., probe_success == 0)
+#   2. "for" duration tak wait karta hai (1 min)
+#   3. Alertmanager ko alert bhejta hai
+#   4. Alertmanager routing se Slack/PagerDuty/Email me notify hota hai
+#
+# Verify:
+#   kubectl get prometheusrule -n monitoring
+#   kubectl describe prometheusrule mxmobilz-app-alerts -n monitoring
+#
+# Prometheus alerts page:
+#   http://localhost:9090 → Alerts → Active/Pending alerts dikhenge
+#
+# Test alert (manually trigger):
+#   kubectl exec deploy/backend-backend-helm -n cloud-native-ecomerce-app -c nginx -- \
+#     sh -c "iptables -A OUTPUT -p tcp --dport 9000 -j DROP"  # FPM block
+#   (Wait 1 min → alert fire hoga. Undo: iptables -D ...)
+# ==============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mxmobilz-app-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring    # Helm chart ke Prometheus CRD se match karna zaroori
+    app: mxmobilz
+    tier: application
+spec:
+  groups:
+    # ──────────────────────────────────────────────────────────
+    # Backend API Alerts
+    # ──────────────────────────────────────────────────────────
+    - name: mxmobilz.backend
+      rules:
+        # API DOWN — Blackbox probe fail
+        - alert: BackendApiDown
+          expr: probe_success{job=~".*mxmobilz.*"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: backend
+            service: backend
+          annotations:
+            summary: "Backend API is DOWN"
+            description: "HTTP probe to {{ $labels.instance }} failed for 1+ minute"
+            runbook: "Check: kubectl logs -l app=backend -n cloud-native-ecomerce-app"
+
+        # HIGH ERROR RATE — 5xx > 5%
+        - alert: High5xxErrorRate
+          expr: |
+            (
+              sum(rate(nginx_http_requests_total{status=~"5.."}[5m]))
+              /
+              sum(rate(nginx_http_requests_total[5m]))
+            ) * 100 > 5
+          for: 3m
+          labels:
+            severity: critical
+            team: backend
+          annotations:
+            summary: "High 5xx error rate: {{ printf \"%.1f\" $value }}%"
+            description: "More than 5% of requests returning 5xx errors"
+
+        # HIGH LATENCY — p95 > 2 seconds
+        - alert: HighApiLatency
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(http_request_duration_seconds_bucket[5m])) by (le)
+            ) > 2
+          for: 5m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "High API latency (p95: {{ printf \"%.2f\" $value }}s)"
+            description: "95th percentile response time exceeds 2 seconds"
+
+        # FRONTEND DOWN
+        - alert: FrontendDown
+          expr: probe_success{job=~".*frontend.*"} == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: frontend
+          annotations:
+            summary: "Frontend is DOWN"
+            description: "HTTP probe to {{ $labels.instance }} failed"
+
+    # ──────────────────────────────────────────────────────────
+    # PHP-FPM Alerts
+    # ──────────────────────────────────────────────────────────
+    - name: mxmobilz.phpfpm
+      rules:
+        # WORKERS EXHAUSTED — > 90% busy
+        - alert: PhpFpmWorkersExhausted
+          expr: |
+            php_fpm_active_processes / php_fpm_total_processes > 0.9
+          for: 3m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "PHP-FPM workers {{ printf \"%.0f\" $value }}% utilized"
+            description: "Process pool nearly exhausted. Increase pm.max_children"
+
+        # PHP-FPM DOWN
+        - alert: PhpFpmDown
+          expr: php_fpm_up == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: backend
+          annotations:
+            summary: "PHP-FPM pool is DOWN"
+
+        # SLOW REQUESTS — avg > 1s
+        - alert: PhpFpmSlowRequests
+          expr: |
+            rate(php_fpm_request_duration_seconds_sum[5m])
+            / rate(php_fpm_request_duration_seconds_count[5m]) > 1
+          for: 5m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "PHP-FPM avg request time: {{ printf \"%.2f\" $value }}s"
+
+    # ──────────────────────────────────────────────────────────
+    # Synthetic Monitoring (User Experience)
+    # ──────────────────────────────────────────────────────────
+    - name: mxmobilz.synthetic
+      rules:
+        # Critical endpoint slow
+        - alert: CriticalEndpointSlow
+          expr: probe_duration_seconds{job=~".*mxmobilz.*"} > 5
+          for: 3m
+          labels:
+            severity: warning
+            team: backend
+          annotations:
+            summary: "Endpoint slow: {{ printf \"%.2f\" $value }}s"
+            description: "{{ $labels.instance }} taking > 5 seconds"

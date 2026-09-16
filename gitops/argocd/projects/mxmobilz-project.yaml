@@ -52,6 +52,8 @@ spec:
     kind: SecretStore
   - group: external-secrets.io
     kind: ClusterSecretStore
+  - group: ''
+    kind: Namespace
   roles:
   - name: admin
     description: Full admin access to mxmobilz project

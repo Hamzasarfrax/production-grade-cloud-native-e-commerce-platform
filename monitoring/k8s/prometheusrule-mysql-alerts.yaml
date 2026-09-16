@@ -1,0 +1,60 @@
+# ==============================================================================
+# PrometheusRule — MySQL Alerts
+# ==============================================================================
+
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: mxmobilz-mysql-alerts
+  namespace: monitoring
+  labels:
+    release: monitoring
+    app: mxmobilz
+    tier: database
+spec:
+  groups:
+    - name: mxmobilz.mysql
+      rules:
+        # MySQL DOWN
+        - alert: MysqlDown
+          expr: mysql_up == 0
+          for: 1m
+          labels:
+            severity: critical
+            team: database
+          annotations:
+            summary: "MySQL is DOWN"
+            description: "Exporter cannot connect to MySQL"
+
+        # Connections > 80% of max
+        - alert: MysqlHighConnections
+          expr: |
+            mysql_global_status_threads_connected
+            / mysql_global_variables_max_connections * 100 > 80
+          for: 5m
+          labels:
+            severity: warning
+            team: database
+          annotations:
+            summary: "MySQL connections at {{ printf \"%.0f\" $value }}%"
+            description: "Connection pool nearly exhausted"
+
+        # Slow queries > 0.1/sec
+        - alert: MysqlSlowQueries
+          expr: rate(mysql_global_status_slow_queries[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: warning
+            team: database
+          annotations:
+            summary: "MySQL slow queries: {{ printf \"%.2f\" $value }}/s"
+
+        # Replication lag > 30s (if applicable)
+        - alert: MysqlReplicationLag
+          expr: mysql_slave_status_seconds_behind_master > 30
+          for: 5m
+          labels:
+            severity: warning
+            team: database
+          annotations:
+            summary: "MySQL replication lag: {{ $value }}s"

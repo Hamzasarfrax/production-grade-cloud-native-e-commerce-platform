@@ -1,0 +1,68 @@
+# ==============================================================================
+# Alertmanager Configuration — Mxmobilz
+# ==============================================================================
+
+global:
+  resolve_timeout: 5m
+
+# Alert routing — konsa alert kahan jaata hai
+route:
+  group_by: ['alertname', 'severity', 'team']
+  group_wait: 30s        # Pehle 30 sec wait karo grouping ke liye
+  group_interval: 5m     # Same group ke alerts 5 min baad
+  repeat_interval: 4h    # Agar resolve nahi hua to 4h baad repeat
+  receiver: 'default'
+
+  routes:
+    # Critical alerts → immediate
+    - match:
+        severity: critical
+      receiver: 'critical'
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Backend team alerts
+    - match:
+        team: backend
+      receiver: 'backend-team'
+
+    # Database team alerts
+    - match:
+        team: database
+      receiver: 'database-team'
+
+# Receivers — notifications kahan bhejni hain
+receivers:
+  - name: 'default'
+    # Default: sirf logs (no external notification configured)
+    # Production me add: slack_configs, email_configs, pagerduty_configs
+    webhook_configs:
+      - url: 'http://localhost:9095/alert'  # Placeholder — replace with actual webhook
+
+  - name: 'critical'
+    webhook_configs:
+      - url: 'http://localhost:9095/alert'
+
+  - name: 'backend-team'
+    webhook_configs:
+      - url: 'http://localhost:9095/alert'
+
+  - name: 'database-team'
+    webhook_configs:
+      - url: 'http://localhost:9095/alert'
+
+# Inhibition rules — related alerts suppress karo
+inhibit_rules:
+  # Agar service down hai to high error rate alert suppress karo (redundant)
+  - source_match:
+      alertname: 'BackendApiDown'
+    target_match:
+      alertname: 'HighErrorRate'
+    equal: ['instance']
+
+  # Agar MySQL down hai to slow queries alert suppress karo
+  - source_match:
+      alertname: 'MysqlDown'
+    target_match:
+      alertname: 'MysqlSlowQueries'
+    equal: []

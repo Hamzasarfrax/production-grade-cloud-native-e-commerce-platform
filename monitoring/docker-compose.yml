@@ -1,0 +1,226 @@
+# ==============================================================================
+# Mxmobilz — Full Monitoring Stack (Prometheus + Grafana + Exporters)
+# ==============================================================================
+# Usage:
+#   cd monitoring && docker compose up -d
+#
+# Access:
+#   Grafana:    http://localhost:3001  (admin / admin)
+#   Prometheus: http://localhost:9090
+#   Alertmanager: http://localhost:9093
+#
+# Prerequisite: Main docker-compose.yml services must be running
+#   cd .. && docker compose up -d
+# ==============================================================================
+
+services:
+
+  # ---------------------------------------------------------------------------
+  # PROMETHEUS — Time-series database + query engine
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.53.3
+    container_name: mxmobilz-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring
+      - app_newtwork
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # GRAFANA — Dashboarding + visualization
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.1.5
+    container_name: mxmobilz-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: "http://localhost:3001"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitoring
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+
+  # ---------------------------------------------------------------------------
+  # ALERTMANAGER — Alert routing + notification
+  # ---------------------------------------------------------------------------
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    container_name: mxmobilz-alertmanager
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./prometheus/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # NODE EXPORTER — Host OS metrics (CPU, RAM, disk, network)
+  # ---------------------------------------------------------------------------
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: mxmobilz-node-exporter
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # CADVISOR — Container metrics (Docker stats)
+  # ---------------------------------------------------------------------------
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.49.1
+    container_name: mxmobilz-cadvisor
+    ports:
+      - "8080:8080"
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - monitoring
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # MYSQL EXPORTER — MySQL metrics (connections, queries, slow queries)
+  # ---------------------------------------------------------------------------
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.15.1
+    container_name: mxmobilz-mysqld-exporter
+    ports:
+      - "9104:9104"
+    environment:
+      DATA_SOURCE_NAME: "exporter:$(MYSQL_EXPORTER_PASSWORD)@(mysql:3306)/"
+    env_file:
+      - .env.exporter
+    command:
+      - '--collect.auto_increment.columns'
+      - '--collect.binlog_size'
+      - '--collect.engine_innodb_status'
+      - '--collect.global_status'
+      - '--collect.global_variables'
+      - '--collect.info_schema.innodb_metrics'
+      - '--collect.info_schema.processlist'
+      - '--collect.info_schema.query_response_time'
+      - '--collect.info_schema.tables'
+      - '--collect.info_schema.tablestats'
+      - '--collect.perf_schema.eventswaits'
+      - '--collect.perf_schema.indexiowaits'
+      - '--collect.perf_schema.tableiowaits'
+      - '--collect.slave_status'
+    networks:
+      - monitoring
+      - app_newtwork
+    restart: unless-stopped
+    depends_on:
+      - mysql
+
+  # ---------------------------------------------------------------------------
+  # PHP-FPM EXPORTER — PHP-FPM process pool metrics
+  # ---------------------------------------------------------------------------
+  phpfpm-exporter:
+    image: hipages/php-fpm-exporter:2.0
+    container_name: mxmobilz-phpfpm-exporter
+    ports:
+      - "9253:9253"
+    environment:
+      PHP_FPM_STATUS_URL: "http://backend-app:9000/fpm-status"
+      PHP_FPM_SCRAPE_URI: "http://backend-app:9000/fpm-status"
+      PHP_FPM_SCRAPER_INTERVAL: "15"
+    networks:
+      - monitoring
+      - app_newtwork
+    restart: unless-stopped
+    depends_on:
+      - backend-app
+
+  # ---------------------------------------------------------------------------
+  # BLACKBOX EXPORTER — HTTP probe health checks
+  # ---------------------------------------------------------------------------
+  blackbox-exporter:
+    image: prom/blackbox-exporter:v0.25.0
+    container_name: mxmobilz-blackbox-exporter
+    ports:
+      - "9115:9115"
+    volumes:
+      - ./prometheus/blackbox.yml:/etc/blackbox_exporter/config.yml:ro
+    networks:
+      - monitoring
+      - app_newtwork
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # NGINX EXPORTER — nginx connection/request metrics (via stub_status)
+  # ---------------------------------------------------------------------------
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.1
+    container_name: mxmobilz-nginx-exporter
+    ports:
+      - "9113:9113"
+    command:
+      - '--nginx.scrape-uri=http://backend-nginx:80/stub_status'
+    networks:
+      - monitoring
+      - app_newtwork
+    restart: unless-stopped
+    depends_on:
+      - backend-nginx
+
+  # ---------------------------------------------------------------------------
+  # REFS: Main app services (connect to monitoring network)
+  # ---------------------------------------------------------------------------
+  mysql:
+    networks:
+      - monitoring
+
+  backend-app:
+    networks:
+      - monitoring
+
+  backend-nginx:
+    networks:
+      - monitoring
+
+networks:
+  monitoring:
+  app_newtwork:
+    external: true
+
+volumes:
+  prometheus_data:
+  grafana_data:
