@@ -18,6 +18,7 @@ if ! kubectl get namespace argocd &> /dev/null; then
     echo "Installing ArgoCD..."
     kubectl create namespace argocd
     kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+
     echo "Waiting for ArgoCD..."
     kubectl wait --for=condition=Ready pods --all -n argocd --timeout=300s
 else
@@ -31,6 +32,15 @@ kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.pas
 echo ""
 
 # 3. Apply GitOps manifests
+echo "Applying Ingress-Nginx..."
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+# for local kind
+which kubectl
+sudo setcap 'cap_net_bind_service=+ep' $(which kubectl)
+getcap $(which kubectl)
+# port forword 
+sudo kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 80:80 &
+
 echo "Applying ArgoCD Project..."
 kubectl apply -f gitops/argocd/projects/mxmobilz-project.yaml
 
@@ -41,7 +51,7 @@ echo ""
 echo "=== Done! ==="
 echo ""
 echo "Next steps:"
-echo "1. Access ArgoCD UI: kubectl port-forward -n argocd svc/argocd-server 8080:443"
+echo "1. Access ArgoCD UI: kubectl port-forward -n argocd svc/argocd-server 8080:443 &"
 echo "2. Open https://localhost:8080 (user: admin, password above)"
 echo "3. Click each app (mxmobilz-dev, mxmobilz-staging, mxmobilz-prod) and press SYNC"
 echo "4. Verify: kubectl get pods -n cloud-native-ecomerce-dev/staging/prod"
