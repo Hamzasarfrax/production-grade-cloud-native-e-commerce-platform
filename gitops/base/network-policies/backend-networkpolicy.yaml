@@ -42,7 +42,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: mysql
+             app.kubernetes.io/name: mysql
       ports:
         - protocol: TCP
           port: 3306
