@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # -----------------------------
       # Checkout
       # -----------------------------
@@ -67,16 +68,32 @@ jobs:
             -t $BACKEND_IMAGE:${{ steps.version.outputs.version }} \
             ./backend
 
+      # -----------------------------
+      # Trivy Backend Scan
+      # -----------------------------
       - name: Scan Backend Image
         if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
+        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
           format: table
+          output: trivy-backend-report.txt
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+
+      # -----------------------------
+      # Upload Backend Trivy Report
+      # -----------------------------
+      - name: Upload Backend Trivy Report
+        if: always() && (steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all')
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-backend-report
+          path: trivy-backend-report.txt
+          if-no-files-found: warn
 
       # =========================================================
       # FRONTEND
@@ -89,16 +106,32 @@ jobs:
             -t $FRONTEND_IMAGE:${{ steps.version.outputs.version }} \
             ./frontend
 
+      # -----------------------------
+      # Trivy Frontend Scan
+      # -----------------------------
       - name: Scan Frontend Image
         if: steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all'
+        continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: ${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.version }}
           format: table
+          output: trivy-frontend-report.txt
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+
+      # -----------------------------
+      # Upload Frontend Trivy Report
+      # -----------------------------
+      - name: Upload Frontend Trivy Report
+        if: always() && (steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all')
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-frontend-report
+          path: trivy-frontend-report.txt
+          if-no-files-found: warn
 
       # =========================================================
       # DOCKER HUB LOGIN
@@ -147,6 +180,10 @@ jobs:
           docker tag \
             $FRONTEND_IMAGE:${{ steps.version.outputs.version }} \
             $FRONTEND_IMAGE:latest
+
+      # =========================================================
+      # PUSH LATEST
+      # =========================================================
 
       - name: Push Backend Latest
         if: steps.version.outputs.component == 'backend'

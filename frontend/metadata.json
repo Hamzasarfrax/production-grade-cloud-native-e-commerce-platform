@@ -1,0 +1,6 @@
+{
+  "name": "Mxmobilz",
+  "description": "Premier e-commerce store for iPhones & Android flagships featuring filterable shop, checkout, trade-in calculator, comparison tool, admin dashboard, contact, and privacy center.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
