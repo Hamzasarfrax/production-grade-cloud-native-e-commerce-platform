@@ -3,13 +3,14 @@ name: Docker Build, Scan & Push
 on:
   push:
     branches:
-      - main
       - dev
-      - staging
+    tags:
+      - "backend-v*.*.*"
+      - "frontend-v*.*.*"
 
 env:
-  BACKEND_IMAGE: hamzasarfrax862/backend-app
-  FRONTEND_IMAGE: hamzasarfrax862/front-end-app
+  BACKEND_IMAGE: hamzasarfraz862/backend-app
+  FRONTEND_IMAGE: hamzasarfraz862/front-end-app
 
 jobs:
   docker:
@@ -24,87 +25,135 @@ jobs:
         uses: actions/checkout@v4
 
       # -----------------------------
+      # Determine Component & Version
+      # -----------------------------
+      - name: Determine Image Tag
+        id: version
+        shell: bash
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/backend-v* ]]; then
+            COMPONENT="backend"
+            VERSION="${GITHUB_REF#refs/tags/backend-v}"
+
+          elif [[ "${GITHUB_REF}" == refs/tags/frontend-v* ]]; then
+            COMPONENT="frontend"
+            VERSION="${GITHUB_REF#refs/tags/frontend-v}"
+
+          else
+            COMPONENT="all"
+            VERSION="${GITHUB_SHA}"
+          fi
+
+          echo "component=${COMPONENT}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+          echo "Component: ${COMPONENT}"
+          echo "Docker version: ${VERSION}"
+
+      # -----------------------------
       # Docker Buildx
       # -----------------------------
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # -----------------------------
-      # Build Backend
-      # -----------------------------
+      # =========================================================
+      # BACKEND
+      # =========================================================
+
       - name: Build Backend Image
+        if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
         run: |
           docker build \
-            -t $BACKEND_IMAGE:${{ github.sha }} \
+            -t $BACKEND_IMAGE:${{ steps.version.outputs.version }} \
             ./backend
 
-      # -----------------------------
-      # Build Frontend
-      # -----------------------------
+      - name: Scan Backend Image
+        if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
+          format: table
+          exit-code: "1"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          severity: "CRITICAL,HIGH"
+
+      # =========================================================
+      # FRONTEND
+      # =========================================================
+
       - name: Build Frontend Image
+        if: steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all'
         run: |
           docker build \
-            -t $FRONTEND_IMAGE:${{ github.sha }} \
+            -t $FRONTEND_IMAGE:${{ steps.version.outputs.version }} \
             ./frontend
 
-      # -----------------------------
-      # Trivy Backend Scan
-      # -----------------------------
-      - name: Scan Backend Image
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
-          format: table
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
-
-      # -----------------------------
-      # Trivy Frontend Scan
-      # -----------------------------
       - name: Scan Frontend Image
+        if: steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all'
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+          image-ref: ${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.version }}
           format: table
           exit-code: "1"
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
 
-      # -----------------------------
-      # Docker Hub Login
-      # -----------------------------
+      # =========================================================
+      # DOCKER HUB LOGIN
+      # =========================================================
+
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # -----------------------------
-      # Push Backend
-      # -----------------------------
+      # =========================================================
+      # PUSH BACKEND
+      # =========================================================
+
       - name: Push Backend Image
+        if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
         run: |
-          docker push $BACKEND_IMAGE:${{ github.sha }}
+          docker push \
+            $BACKEND_IMAGE:${{ steps.version.outputs.version }}
 
-      # -----------------------------
-      # Push Frontend
-      # -----------------------------
+      # =========================================================
+      # PUSH FRONTEND
+      # =========================================================
+
       - name: Push Frontend Image
+        if: steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all'
         run: |
-          docker push $FRONTEND_IMAGE:${{ github.sha }}
+          docker push \
+            $FRONTEND_IMAGE:${{ steps.version.outputs.version }}
 
-      # -----------------------------
-      # Also push latest
-      # -----------------------------
-      - name: Tag Images as Latest
+      # =========================================================
+      # LATEST TAG
+      # =========================================================
+
+      - name: Tag Backend as Latest
+        if: steps.version.outputs.component == 'backend'
         run: |
-          docker tag $BACKEND_IMAGE:${{ github.sha }} $BACKEND_IMAGE:latest
-          docker tag $FRONTEND_IMAGE:${{ github.sha }} $FRONTEND_IMAGE:latest
+          docker tag \
+            $BACKEND_IMAGE:${{ steps.version.outputs.version }} \
+            $BACKEND_IMAGE:latest
 
-      - name: Push Latest Tags
+      - name: Tag Frontend as Latest
+        if: steps.version.outputs.component == 'frontend'
+        run: |
+          docker tag \
+            $FRONTEND_IMAGE:${{ steps.version.outputs.version }} \
+            $FRONTEND_IMAGE:latest
+
+      - name: Push Backend Latest
+        if: steps.version.outputs.component == 'backend'
         run: |
           docker push $BACKEND_IMAGE:latest
+
+      - name: Push Frontend Latest
+        if: steps.version.outputs.component == 'frontend'
+        run: |
           docker push $FRONTEND_IMAGE:latest

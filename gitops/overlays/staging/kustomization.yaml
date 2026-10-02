@@ -6,6 +6,13 @@ resources:
 
 namespace: cloud-native-ecomerce-staging
 
+images:
+- name: hamzasarfraz862/backend-app
+  newTag: 1.0.0
+
+- name: hamzasarfraz862/front-end-app
+  newTag: 1.0.0
+
 patches:
 - patch: |-
     apiVersion: apps/v1
