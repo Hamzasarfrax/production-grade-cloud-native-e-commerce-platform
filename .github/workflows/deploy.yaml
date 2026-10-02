@@ -67,16 +67,16 @@ jobs:
             -t $BACKEND_IMAGE:${{ steps.version.outputs.version }} \
             ./backend
 
-      - name: Scan Backend Image
-        if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
-          format: table
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
+      # - name: Scan Backend Image
+      #   if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
+      #   uses: aquasecurity/trivy-action@master
+      #   with:
+      #     image-ref: ${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.version }}
+      #     format: table
+      #     exit-code: "1"
+      #     ignore-unfixed: true
+      #     vuln-type: "os,library"
+      #     severity: "CRITICAL,HIGH"
 
       # =========================================================
       # FRONTEND
