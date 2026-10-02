@@ -18,6 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # -----------------------------
       # Checkout
       # -----------------------------
@@ -27,7 +28,7 @@ jobs:
       # -----------------------------
       # Determine Component & Version
       # -----------------------------
-      - name: Determine Component & Version
+      - name: Determine Image Tag
         id: version
         shell: bash
         run: |
@@ -40,16 +41,15 @@ jobs:
             VERSION="${GITHUB_REF#refs/tags/frontend-v}"
 
           else
-            echo "ERROR: Only semantic version tags are allowed."
-            echo "Expected: backend-v1.0.2 or frontend-v1.0.2"
-            exit 1
+            COMPONENT="all"
+            VERSION="${GITHUB_SHA}"
           fi
 
           echo "component=${COMPONENT}" >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
           echo "Component: ${COMPONENT}"
-          echo "Semantic Version: ${VERSION}"
+          echo "Docker version: ${VERSION}"
 
       # -----------------------------
       # Docker Buildx
@@ -62,7 +62,7 @@ jobs:
       # =========================================================
 
       - name: Build Backend Image
-        if: steps.version.outputs.component == 'backend'
+        if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
         run: |
           docker build \
             -t $BACKEND_IMAGE:${{ steps.version.outputs.version }} \
@@ -72,7 +72,7 @@ jobs:
       # Trivy Backend Scan
       # -----------------------------
       - name: Scan Backend Image
-        if: steps.version.outputs.component == 'backend'
+        if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
@@ -88,7 +88,7 @@ jobs:
       # Upload Backend Trivy Report
       # -----------------------------
       - name: Upload Backend Trivy Report
-        if: always() && steps.version.outputs.component == 'backend'
+        if: always() && (steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all')
         uses: actions/upload-artifact@v4
         with:
           name: trivy-backend-report
@@ -100,7 +100,7 @@ jobs:
       # =========================================================
 
       - name: Build Frontend Image
-        if: steps.version.outputs.component == 'frontend'
+        if: steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all'
         run: |
           docker build \
             -t $FRONTEND_IMAGE:${{ steps.version.outputs.version }} \
@@ -110,7 +110,7 @@ jobs:
       # Trivy Frontend Scan
       # -----------------------------
       - name: Scan Frontend Image
-        if: steps.version.outputs.component == 'frontend'
+        if: steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all'
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
         with:
@@ -126,7 +126,7 @@ jobs:
       # Upload Frontend Trivy Report
       # -----------------------------
       - name: Upload Frontend Trivy Report
-        if: always() && steps.version.outputs.component == 'frontend'
+        if: always() && (steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all')
         uses: actions/upload-artifact@v4
         with:
           name: trivy-frontend-report
@@ -148,7 +148,7 @@ jobs:
       # =========================================================
 
       - name: Push Backend Image
-        if: steps.version.outputs.component == 'backend'
+        if: steps.version.outputs.component == 'backend' || steps.version.outputs.component == 'all'
         run: |
           docker push \
             $BACKEND_IMAGE:${{ steps.version.outputs.version }}
@@ -158,7 +158,7 @@ jobs:
       # =========================================================
 
       - name: Push Frontend Image
-        if: steps.version.outputs.component == 'frontend'
+        if: steps.version.outputs.component == 'frontend' || steps.version.outputs.component == 'all'
         run: |
           docker push \
             $FRONTEND_IMAGE:${{ steps.version.outputs.version }}
@@ -172,14 +172,14 @@ jobs:
         run: |
           docker tag \
             $BACKEND_IMAGE:${{ steps.version.outputs.version }} \
-            $BACKEND_IMAGE:${{ steps.version.outputs.version }}
+            $BACKEND_IMAGE:latest
 
       - name: Tag Frontend as Latest
         if: steps.version.outputs.component == 'frontend'
         run: |
           docker tag \
             $FRONTEND_IMAGE:${{ steps.version.outputs.version }} \
-            $FRONTEND_IMAGE:${{ steps.version.outputs.version }}
+            $FRONTEND_IMAGE:latest
 
       # =========================================================
       # PUSH LATEST
@@ -188,9 +188,9 @@ jobs:
       - name: Push Backend Latest
         if: steps.version.outputs.component == 'backend'
         run: |
-          docker push $BACKEND_IMAGE:${{ steps.version.outputs.version }}
+          docker push $BACKEND_IMAGE:latest
 
       - name: Push Frontend Latest
         if: steps.version.outputs.component == 'frontend'
         run: |
-          docker push $FRONTEND_IMAGE:${{ steps.version.outputs.version }}
+          docker push $FRONTEND_IMAGE:latest
