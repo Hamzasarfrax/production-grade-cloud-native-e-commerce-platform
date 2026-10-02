@@ -1,0 +1,41 @@
+# Mxmobilz — Frontend production nginx config
+# BACKEND_URL env var se render hota hai (nginx templates feature).
+# Compose: http://api:8000 | Standalone: http://host.docker.internal:8000
+
+server {
+    listen 80;
+    server_name _;
+
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # gzip on — smaller transfers
+    gzip on;
+    gzip_types text/css application/javascript application/json image/svg+xml;
+    gzip_min_length 1024;
+
+    # ---- API reverse proxy (same-origin pattern) ----
+    # Frontend code sirf relative '/api' call karta hai —
+    # yahan nginx usay backend microservice tak pohanchata hai.
+    location /api/ {
+        proxy_pass ${BACKEND_URL};
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_read_timeout 30s;
+    }
+
+    # ---- Static assets: immutable cache (Vite hashes filenames) ----
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+        try_files $uri =404;
+    }
+
+    # ---- SPA fallback: non-file routes -> index.html ----
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
