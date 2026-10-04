@@ -2,8 +2,8 @@ name: Docker Build, Scan & Push
 
 on:
   push:
-    branches:
-      - dev
+    # branches:
+    #   - dev
     tags:
       - "backend-v*.*.*"
       - "frontend-v*.*.*"

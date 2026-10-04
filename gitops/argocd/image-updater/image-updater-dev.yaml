@@ -10,12 +10,12 @@ spec:
     - namePattern: mxmobilz-dev
       images:
         - alias: backend
-          imageName: hamzasarfraz862/backend-app:1.0.0
+          imageName: "hamzasarfraz862/backend-app:v1.x.x"
           manifestTargets:
             kustomize:
               name: hamzasarfraz862/backend-app
         - alias: frontend
-          imageName: hamzasarfraz862/front-end-app:1.0.0
+          imageName: "hamzasarfraz862/front-end-app:v1.x.x"
           manifestTargets:
             kustomize:
               name: hamzasarfraz862/front-end-app
