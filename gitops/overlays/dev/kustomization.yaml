@@ -8,7 +8,7 @@ namespace: cloud-native-ecomerce-dev
 
 images:
 - name: hamzasarfraz862/backend-app
-  newTag: 1.0.7
+  newTag: 1.0.8
   newName: hamzasarfraz862/backend-app
 - name: hamzasarfraz862/front-end-app
   newTag: 1.0.0
