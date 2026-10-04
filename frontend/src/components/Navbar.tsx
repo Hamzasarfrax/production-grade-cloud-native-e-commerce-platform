@@ -227,7 +227,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <RefreshCw className="w-4 h-4 text-emerald-600" />
-              Trade-In
+              Trade-In TESTINGS
             </button>
 
             <button
