@@ -28,6 +28,6 @@ spec:
   writeBackConfig:
     method: git:secret:ssh-git-creds
     gitConfig:
-      repository: git@github.com:Hamzasarfraz/production-grade-cloud-native-e-commerce-platform.git
+      repository: git@github.com:Hamzasarfrax/production-grade-cloud-native-e-commerce-platform.git
       branch: main
       writeBackTarget: kustomization:/gitops/overlays/staging
