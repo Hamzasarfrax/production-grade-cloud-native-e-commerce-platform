@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/health', fn () => response()->json(
     [
     'ok' => true,
-    'data' => 'Mxmobilz API is running'
+    'data' => 'Mxmobilz API is running ohoooo'
     ]
 
     ));
