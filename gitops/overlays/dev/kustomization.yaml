@@ -8,10 +8,11 @@ namespace: cloud-native-ecomerce-dev
 
 images:
 - name: hamzasarfraz862/backend-app
-  newTag: 1.0.0
-
+  newTag: 1.0.7
+  newName: hamzasarfraz862/backend-app
 - name: hamzasarfraz862/front-end-app
   newTag: 1.0.0
+  newName: hamzasarfraz862/front-end-app
 
 patches:
 - patch: |-
@@ -59,5 +60,5 @@ configMapGenerator:
   - LOG_LEVEL=debug
 
 labels:
-  - pairs:
-      environment: dev
+- pairs:
+    environment: dev
