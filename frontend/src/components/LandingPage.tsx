@@ -76,7 +76,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
             <div className="lg:col-span-6 space-y-6">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-orange-100 border border-orange-200 text-orange-700 text-xs font-bold shadow-xs">
                 <Sparkles className="w-4 h-4 text-orange-500" />
-                <span>Next-Generation Flagship Mobile Collection 2026</span>
+                <span>Next-Generation Flagship Mobile Collection 2026 TESTING GIT GITOPS</span>
               </div>
 
               <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-slate-900 leading-tight">
@@ -259,7 +259,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({
 
           {/* Product Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {featuredProducts.map(product => (
+            {featuredProducts.map((product: { id: any; image: any; name: any; isBestSeller: any; os: string; condition: any; brand: any; rating: any; reviewsCount: any; description: any; processor: any; specs: { mainCamera: any; }; price: number; originalPrice: number; storageOptions: any[]; colorOptions: any[]; }) => (
               <div 
                 key={product.id}
                 className="bg-white rounded-2xl border border-slate-200/90 hover:border-blue-300 transition duration-300 overflow-hidden flex flex-col group shadow-sm hover:shadow-xl"
