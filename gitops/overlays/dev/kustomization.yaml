@@ -11,7 +11,7 @@ images:
   newTag: 1.0.1
   newName: hamzasarfraz862/backend-app
 - name: hamzasarfraz862/front-end-app
-  newTag: 1.0.2
+  newTag: 1.0.3
   newName: hamzasarfraz862/front-end-app
 
 patches:
